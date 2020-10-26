@@ -32,6 +32,22 @@ test = eval((abs(4), 1 + 2),!Nil).
 
 
 % (\x.x + x)(1 + 2)
+/*
 init @@ :- uniq | 
 test = eval((abs(z + z), 1 + 2),!Nil).
+*/
+
+% (\x.x)(\y.y + y)(1 + 2)
+/*
+init @@ :- uniq | 
+test = eval(((abs(z), abs(z + z)), 1 + 2),!Nil).
+*/
+
+% (\xy.xy)(\y.y + y)(1 + 2)
+/*
+init @@ :- uniq | 
+test = eval(((abs(abs((s(z), z))), abs(z + z)), 1 + 2),!Nil).
+*/
+
+
 
