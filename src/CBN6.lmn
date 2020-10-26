@@ -1,0 +1,37 @@
+abs    @@ R = eval(abs(E), !Env) :- R = val(cl(E, !Env)).
+
+app    @@ R = eval((E1, E2), !Env)
+          :- R = eval(E1, !Env_), !Env_ = [th(E2)|!Env].
+
+beta   @@ R = val(cl(E, !Env)), !Env = [H|T]
+          :- R = eval(E, !Env), !Env = [H|T].
+
+lookup @@ R = eval(s(S), !Env), !Env = [H|!T]
+          :- R = eval(S, !T), !Env = [H|!T].
+
+force  @@ R = eval(z, !Env), !Env = [th(H)|!T]
+          :- R = eval(z, !Env), !Env = [eval(H, !T)|!T].
+
+instantiate @@
+          R = eval(z, !Env), !Env = [val(H)|!T]
+          :- ground(H) | R = val(H), !Env = [val(H)|!T].
+
+plus   @@ R = eval(E1 + E2, !Env)
+          :- R = plus(eval(E1, !Env), eval(E2, !Env)).
+
+add    @@ R = plus(val(X), val(Y)) :- Z = X + Y | R = val(Z).
+
+number @@ R = eval(N, !Env) :- int(N) | R = val(N). 
+
+
+% (\x.4)(1 + 2)
+/*
+init @@ :- uniq | 
+test = eval((abs(4), 1 + 2),!Nil).
+*/
+
+
+% (\x.x + x)(1 + 2)
+init @@ :- uniq | 
+test = eval((abs(z + z), 1 + 2),!Nil).
+

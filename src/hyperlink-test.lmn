@@ -1,0 +1,6 @@
+init @@
+ :- uniq |
+	 a(b(!H)), c(!H). 
+
+dup @@
+ a(B) :- ground(B) | d(B), e(B).
