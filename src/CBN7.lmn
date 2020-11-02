@@ -1,0 +1,86 @@
+{'$callback'(zerostep).
+% curry
+R = fun([V|Vs], E) :- R = abs(V, fun(Vs, E)).
+R = fun([], E) :- R = E. 
+}.
+
+abs    @@ R = eval(abs(V, E), !Env) :- R = val(cl(V, E, !Env)).
+
+app    @@ R = eval((E1, E2), !Env)
+          :- R = eval(E1, !Env_), !Env_ = [th(E2)|!Env].
+
+beta   @@ R = val(cl(V, E, !Env)), !Env = [H|T]
+          :- R = eval(E, !Env), !Env = [asc(V, H)|T].
+
+lookup @@ R = eval(V1, !Env), !Env = [asc(V2, H)|!T]
+          :- V1 \== V2 % , string(V1)
+          | R = eval(V1, !T), !Env = [asc(V2, H)|!T].
+
+force  @@ R = eval(V1, !Env), !Env = [asc(V2, th(H))|!T]
+          :- V1 == V2 % , string(V1)
+          | R = eval(V1, !Env), !Env = [asc(V2, eval(H, !T))|!T].
+
+instantiate @@
+          R = eval(V1, !Env), !Env = [asc(V2, val(H))|!T]
+          :- ground(H), V1 == V2 % , string(V1)
+          | R = val(H), !Env = [asc(V2, val(H))|!T].
+
+plus   @@ R = eval(E1 + E2, !Env)
+          :- R = plus(eval(E1, !Env), eval(E2, !Env)).
+
+add    @@ R = plus(val(X), val(Y)) :- Z = X + Y | R = val(Z).
+
+number @@ R = eval(N, !Env) :- int(N) | R = val(N). 
+
+
+% (\x.4)(1 + 2)
+/*
+init @@ :- uniq | 
+test = eval((abs(x, 4), 1 + 2),!Nil).
+*/
+
+% (\x.x + x)(1 + 2)
+/*
+init @@ :- uniq | 
+test = eval((abs(x, x + x), 1 + 2),!Nil).
+*/
+
+% (\x.x)(\y.y + y)(1 + 2)
+/*
+init @@ :- uniq | 
+test = eval(
+ ((abs(x,x), abs(y,y + y)), 1 + 2),
+!Nil).
+*/
+
+% (\xy.xy)(\y.y + y)(1 + 2)
+init @@ :- uniq | 
+test = eval(
+ ((fun([x,y], (x,y)), (fun([y], y + y))), 1 + 2),
+!Nil).
+
+% (\f.f 1 (2+3)) (\xy.x)
+% (\0 1 (2+3)) (\\1)
+/*
+init @@ :- uniq |
+test = eval(
+ (abs(((z, 1), 2 + 3)),
+	  abs(abs(s(z)))
+	 ),
+!Nil).
+*/
+% the followings are not working
+
+% (\p.p(\xy.x))(\sbf.fsb) 1 (2+3)
+% (\0(\\1))((\\\021) 1 (2+3))
+/*
+init @@ :- uniq |
+test = eval(
+	(abs((z,(abs(abs(s(z)))))), % CAR
+		((abs(abs(abs(((z, s(s(z))), s(z))))),
+		  1),
+ 2 + 3)
+),
+!Nil).
+*/
+

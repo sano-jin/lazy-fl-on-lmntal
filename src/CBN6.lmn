@@ -49,5 +49,27 @@ init @@ :- uniq |
 test = eval(((abs(abs((s(z), z))), abs(z + z)), 1 + 2),!Nil).
 */
 
+% (\f.f 1 (2+3)) (\xy.x)
+% (\0 1 (2+3)) (\\1)
+init @@ :- uniq |
+test = eval(
+ (abs(((z, 1), 2 + 3)),
+	  abs(abs(s(z)))
+	 ),
+!Nil).
 
+% the followings are not working
+
+% (\p.p(\xy.x))(\sbf.fsb) 1 (2+3)
+% (\0(\\1))((\\\021) 1 (2+3))
+/*
+init @@ :- uniq |
+test = eval(
+	(abs((z,(abs(abs(s(z)))))), % CAR
+		((abs(abs(abs(((z, s(s(z))), s(z))))),
+		  1),
+ 2 + 3)
+),
+!Nil).
+*/
 
