@@ -11,7 +11,17 @@ R = append([H|T], L) :- R = [H|append(T, L)].
 
 }.
 
-abs    @@ R = eval(abs(V, E), Env, Sp)
+ti([],   /* stack */
+   [asc("main", !A1)] /* globals */
+).
+
+!A1 = sc([], !A4).
+!A2 = sc
+  
+
+
+
+abs    @@ R = eval(supercomb(Vs, E), Env, Sp)
           :- R = val(cl(V, E, Env, Sp)).
 
 app    @@ R = eval((E1, E2), Env, Sp)

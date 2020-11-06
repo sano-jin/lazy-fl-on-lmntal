@@ -1,0 +1,107 @@
+/*
+ main = id 3
+ id = \x -> x
+*/
+/*
+init @@
+:- uniq |
+    ti([!Main],
+       {!Main = sc([], app("id", 3)).
+       !Id = sc([ "x" ], "x").
+       }, 
+       [ asc("main", !Main),
+         asc("id", !Id)
+       ]).
+*/
+
+/*
+ main = id 3
+ id = s k k
+ s = \x y z -> x z (y z)
+ k = \x y -> x
+*/
+init @@
+:- uniq |
+    ti([!Main],
+       {!Main = sc([], app("id", 3)).
+        !Id = sc([], app(app("s", "k"), "k")).
+        !S = sc(["x", "y", "z"], app(app("x", "z"), app("y", "z"))).
+        !K = sc(["x", "y"], "x").
+       }, 
+       [ asc("main", !Main),
+         asc("id", !Id),
+         asc("s", !S),
+         asc("k", !K)
+       ]).
+
+unwind @@
+ti([!A0|S], { !A0 = app(!A1, A2). $p[A2]. @r}, F) 
+  :- ti([!A1, !A0|S], { !A0 = app(!A1, A2). $p[A2]. @r}, F) .
+
+instantiate @@
+ti([!A0|S], { !A0 = sc(Vs, Body), $p, @r}, F) 
+  :- ground(Vs), ground(Body), ground(F)
+   | ti([!Ar|S], 
+     { !A0 = sc(Vs, Body).
+       !Ar = inst_prep(Vs, Body, F).
+       $p.
+       
+       inst_zip_nil @@
+       R = inst_prep([],Body, F) 
+       :- R = inst(Body, F).
+       
+       inst_app @@
+       R = inst(app(E1, E2), F) 
+       :- ground(F)
+       | R = app(!H1, !H2), 
+       			 !H1 = inst(E1, F),
+       			 !H2 = inst(E2, F).
+
+       inst_Number @@
+       R = inst(N, F) 
+       :- int(N), ground(F)
+       | R = n(N).
+
+       inst_var_lookup @@
+       R = inst(V1, [asc(V2, !A)|F]) 
+       :- string(V1), V1 \== V2 
+       | R = inst(V1, F).
+       
+       inst_var_resolve @@
+       R = inst(V1, [asc(V2, !A)|F]) 
+       :- string(V1), V1 == V2, ground(F)
+       | R >< !A.
+       
+       /*
+       {'$callback'(zerostep). // zerostep is not working correctly 
+       GC_app @@
+       !R = app(!A1, !A2) :- num(R) =:= 1 | .
+       
+       GC_number @@
+       !R = n(N) :- int(N), num(R) =:= 1 | .
+       
+       GC_sc @@
+       !R = sc(Vs, Body) :- ground(Vs), ground(Body), num(R) =:= 1 | .
+       }.
+       */
+     },
+     F).
+
+inst_prep_zip @@
+ti([!Ar,!A1|S], 
+   { !Ar = inst_prep([V|Vs], Body, F).
+     !A1 = app(!A2, !A3).
+     $p[V, Vs, Body, F].
+     @r.
+   }, F_) 
+  :- ti([!Ar|S],
+        { !Ar = inst_prep(Vs, Body, [asc(V, !A3)|F]).
+          !A1 = app(!A2, !A3).
+          $p[V, Vs, Body, F].
+          @r.
+        }, F_).
+
+final @@
+ti([!A], { !A = n(N). $p[]. @r. }, F) 
+:- int(N), ground(F) | result = N.
+
