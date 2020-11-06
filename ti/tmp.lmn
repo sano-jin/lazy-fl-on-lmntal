@@ -1,0 +1,25 @@
+inst_zip_nil @@
+R = inst_prep([],Body, F) 
+  :- R = inst(Body, F).
+
+inst_app @@
+R = inst(app(E1, E2), F) 
+  :- ground(F)
+     | R = app(!H1, !H2), 
+       !H1 = inst(E1, F),
+       !H2 = inst(E2, F).
+
+inst_Number @@
+R = inst(N, F) 
+  :- int(N), ground(F)
+     | R = n(N).
+
+inst_var_lookup @@
+R = inst(V1, [asc(V2, !A)|F]) 
+  :- string(V1), V1 \== V2 
+     | R = inst(V1, F).
+
+inst_var_resolve @@
+R = inst(V1, [asc(V2, !A)|F]) 
+  :- string(V1), V1 == V2, ground(F)
+     | R >< !A.
