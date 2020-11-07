@@ -1,0 +1,163 @@
+{
+    /*
+      main = id 3
+      id = \x -> x
+    */
+/*
+    init @@
+    :- uniq |
+	// stack
+	stk = [!Main],
+    // heap 
+    !Main = sc([], app("id", 3)),
+    !Id = sc([ "x" ], "x"),
+    // global
+    gbl = !Gbl,
+    !Gbl = [ asc("main", !Main) | !T ],
+    !T = [ asc("id", !Id) | !Nil].
+    */
+
+    /*
+ main = id 3
+ id = s k k
+ s = \x y z -> x z (y z)
+ k = \x y -> x
+    */
+
+    init @@
+    :- uniq |
+	// stack 
+	stk = [!Main],
+    // heap
+    !Main = sc([], app("id", 3)),
+    !Id = sc([], app(app("s", "k"), "k")),
+    !S = sc(["x", "y", "z"], app(app("x", "z"), app("y", "z"))),
+    !K = sc(["x", "y"], "x"),
+    // global
+    gbl = !G1,
+    !G1 = [asc("main", !Main)|!G2],
+    !G2 = [asc("id", !Id)|!G3],
+    !G3 = [asc("s", !S)|!G4],
+    !G4 = [asc("k", !K)|!Nil].
+     
+
+/*
+ main = let x = 3; y = id x in y
+ id = \x -> x
+*/
+
+/*
+init @@
+:- uniq |
+	    // stack 
+	    stk = [!Main],
+    // heap
+    !Main = sc([], 
+      let([ "x" = sc([], 3), 
+            "y" = sc([], app("id", "x")) ],
+       	  "y"
+      )),
+    !Id = sc(["x"], "x"),
+    // global
+    gbl = !G1,
+    !G1 = [asc("main", !Main)|!G2],
+    !G2 = [asc("id", !Id)|!Nil].
+
+*/
+
+
+    unwind @@
+    stk = [!A|S], !A = app(!A1, A2) 
+    :- stk = [!A1, !A|S], !A = app(!A1, A2).
+
+    instantiate @@
+    stk = [!A0|S], !A0 = sc(Vs, Body), gbl = !Gbl 
+    :- ground(Vs), ground(Body)
+       | stk = [!Ar|S], gbl = !Gbl,
+	 !A0 = sc(Vs, Body),
+	 !Ar = zip_args(Vs, Body, !Gbl).
+
+    //{'$callback'(zerostep). 
+	
+	inst_number @@
+	R = inst(N, !F) 
+	:- int(N)
+	   | R = n(N).
+
+	finished_zip_args @@
+	R = zip_args([],Body, F) 
+	:- R = inst(Body, F).
+
+	inst_app @@
+	R = inst(app(E1, E2), !F) 
+	:- ground(F)
+	   | R = app(!H1, !H2), 
+	     !H1 = inst(E1, !F),
+	     !H2 = inst(E2, !F).
+
+	inst_var_lookup @@
+	R = inst(V1, !F), !F = [asc(V2, A)|!T] 
+	:- string(V1), V1 \== V2 
+	   | R = inst(V1, !T), !F = [asc(V2, A)|!T].
+	
+	inst_var_resolve @@
+	R = inst(V1, !F), !F = [asc(V2, !A)|!T] 
+	:- string(V1), V1 == V2
+	   | R >< !A, !F = [asc(V2, !A)|!T].
+
+
+// Mark 2
+	/*
+	   let x = 1; y = 2; in exp
+           let([ "x" = sc([], 3), "y" = sc([], "x") ], "y" )).
+	*/
+	inst_let @@
+	R = inst(let([V = sc(Vs, Body)|Defs], Body_), Env)
+	:- R = inst(let(Defs, Body_), !F_),
+	   !F_ = [asc(V, sc_(Vs, Body))|Env].
+
+	inst_let_finished @@
+	R = inst(let([], Body), Env)
+	:- R = inst(Body, Env).
+
+	inst_var_resolve_sc @@
+	R = inst(V1, !F), !F = [asc(V2, sc_(Vs, Body))|!T] 
+	:- string(V1), V1 == V2, ground(Vs), ground(Body)
+	   | R = zip_args(Vs, Body, !T), !F = [asc(V2, sc_(Vs, Body))|!T].
+
+
+
+	GC_app @@
+	!R = app(!A1, !A2) :- num(R) =:= 1 | .
+	
+	GC_number @@
+	!R = n(N) :- int(N), num(R) =:= 1 | .
+	
+	GC_sc @@
+	!R = sc(Vs, Body) :- ground(Vs), ground(Body), num(R) =:= 1 | .
+
+
+
+
+	append @@
+	R = append([H|T], L) 
+	:- R = [H|append(T, L)].
+
+	zip_args @@
+	stk = [!Ar,!A1|S], 
+	!Ar = zip_args([V|Vs], Body, F),
+	!A1 = app(!A2, !A3)
+	:- 
+	    stk = [!Ar|S],
+	    !Ar = zip_args(Vs, Body, !F_),
+	    !F_ = [asc(V, !A3)|F],
+	    !A1 = app(!A2, !A3).
+
+    //}.
+
+
+}.
+
+final @@
+{ stk = [!A], !A = n(N), $p[], @r }
+:- int(N) | result = N.
