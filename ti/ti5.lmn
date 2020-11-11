@@ -31,27 +31,26 @@
 	stk = [!Main],
     // heap
     !Main = sc([], app("id", 3)),
-    !Id   = sc([], app(app("s", "k"), "k")),
-    !S    = sc(["x", "y", "z"], app(app("x", "z"), app("y", "z"))),
-    !K    = sc(["x", "y"], "x"),
+    !Id = sc([], app(app("s", "k"), "k")),
+    !S = sc(["x", "y", "z"], app(app("x", "z"), app("y", "z"))),
+    !K = sc(["x", "y"], "x"),
     // global
     gbl = !G1,
-    !G1 = [ asc("main", !Main) | !G2 ],
-    !G2 = [ asc("id"  , !Id  ) | !G3 ],
-    !G3 = [ asc("s"   , !S   ) | !G4 ],
-    !G4 = [ asc("k"   , !K   ) | !Nil].
-  */
-   
+    !G1 = [asc("main", !Main)|!G2],
+    !G2 = [asc("id", !Id)|!G3],
+    !G3 = [asc("s", !S)|!G4],
+    !G4 = [asc("k", !K)|!Nil].
+  */   
+
 /*
  main = let x = 3; y = id x in y
  id = \x -> x
 */
 
-/*
 init @@
 :- uniq |
-	    // stack 
-	    stk = [!Main],
+	// stack 
+	stk = [!Main],
     // heap
     !Main = sc([], 
       let([ "x" = sc([], 3), 
@@ -61,33 +60,8 @@ init @@
     !Id = sc(["x"], "x"),
     // global
     gbl = !G1,
-    !G1 = [asc("main", !Main)|!G2],
-    !G2 = [asc("id", !Id)|!Nil].
-
-*/
-     
-/*
- main = let rec x = id y; y = 3 in x
- id = \x -> x
-*/
-
-
-init @@
-:- uniq |
-	// stack 
-	stk = [!Main],
-  // heap
-  !Main = sc([], 
-	     let_rec([ "x" = sc([], app("id", "y")), 
-		   "y" = sc([], 3) ],
-       		 "x"
-	     )),
-  !Id = sc(["x"], "x"),
-  // global
-  gbl = !G1,
-  !G1 = [asc("main", !Main)|!G2],
-  !G2 = [asc("id", !Id)|!Nil].
-    
+    !G1 = [ asc("main", !Main) |!G2 ],
+    !G2 = [ asc("id"  , !Id  ) |!Nil].
 
 
     unwind @@
@@ -148,27 +122,6 @@ init @@
 	:- string(V1), V1 == V2, ground(Vs), ground(Body)
 	   | R = zip_args(Vs, Body, !T), !F = [asc(V2, sc_(Vs, Body))|!T].
 
-    // let rec
-    init_inst_let_rec @@
-    R = inst(let_rec(Defs, Body), !Env)
-    :- R = inst(let_rec(Defs, Body, !Env_), !Env).
-
-    inst_let_rec @@
-    R = inst(let_rec([V = sc(Vs, Body)|Defs], Body_, !F), Env)
-    :- R = inst(let_rec(Defs, Body_, !F), !F_),
-       !F_ = [asc(V, sc_(Vs, Body, !F))|Env].
-    
-    inst_let_rec_finished @@
-    R = inst(let_rec([], Body, !F), !Env)
-    :- R = inst(Body, !Env), 
-       !F >< !Env.
-
-    inst_var_resolve_rec_sc @@
-    R = inst(V1, !F), !F = [asc(V2, sc_(Vs, Body, !Env))|!T] 
-    :- string(V1), V1 == V2, ground(Vs), ground(Body)
-       | R = zip_args(Vs, Body, !Env), !F = [asc(V2, sc_(Vs, Body, !Env))|!T].
-
-
 /*
 	GC_app @@
 	!R = app(!A1, !A2) :- num(R) =:= 1 | .
@@ -179,8 +132,6 @@ init @@
 	GC_sc @@
 	!R = sc(Vs, Body) :- ground(Vs), ground(Body), num(R) =:= 1 | .
 */
-
-
 
 	append @@
 	R = append([H|T], L) 
