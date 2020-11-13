@@ -224,14 +224,10 @@ init @@
 
 
 /*
- main = 
-  let rec 
-   a v= pair x b
-   b = pair y a
-  in
-  fst (snd (snd (snd a)))
-
-        in 3
+ main          = twice twice twice id 3
+ compose f g x = f (g x)
+ id x          = x
+ twice f       = compose f f 
 */
 
 init @@
