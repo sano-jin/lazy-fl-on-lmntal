@@ -65,13 +65,13 @@ init @@
     !G2 = [asc("id", !Id)|!Nil].
 
 */
-     
+ 
 /*
  main = let rec x = id y; y = 3 in x
  id = \x -> x
 */
 
-
+/*
 init @@
 :- uniq |
 	// stack 
@@ -87,8 +87,171 @@ init @@
   gbl = !G1,
   !G1 = [asc("main", !Main)|!G2],
   !G2 = [asc("id", !Id)|!Nil].
-    
+  */  
 
+/*
+ K1 x y = y
+ K x y = x
+ pair x y f = f x y
+ fst p = p K
+ snd p = p K1
+ f x y = 
+  let_rec
+   a = pair x b
+   b = pair y a
+  in
+  fst (snd (snd (snd a)))
+ main = f 3 4
+*/
+
+/*
+init @@
+:- uniq |
+	// stack 
+	stk = [!Main],
+  // heap
+  !Main = sc([], app(app("f", 3), 4)),
+  !F    = sc(["x", "y"], 	     
+	     let_rec([ "a" = sc([], app(app("pair", "x"), "b")), 
+		       "b" = sc([], app(app("pair", "y"), "a")) 
+		     ],
+       		     app("fst", app("snd", app("snd", app("snd", "a"))))
+	     )),
+  !Snd  = sc(["p"], app("p", "k1")),
+  !Fst  = sc(["p"], app("p", "k")),
+  !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
+  !K1   = sc(["x", "y"], "y"),
+  !K    = sc(["x", "y"], "x"),
+  // global
+  gbl = !G1,
+  !G1 = [ asc("main", !Main) | !G2 ],
+  !G2 = [ asc("f"   , !F   ) | !G3 ],
+  !G3 = [ asc("snd" , !Snd ) | !G4 ],
+  !G4 = [ asc("fst" , !Fst ) | !G5 ],
+  !G5 = [ asc("pair", !Pair) | !G6 ],
+  !G6 = [ asc("k"   , !K   ) | !G7 ],
+  !G7 = [ asc("k1"  , !K1  ) | !Nil].
+*/
+
+/*
+ pair x y f = f x y
+ fst x y = x
+ snd x y = y
+ main = (((pair 2) (snd 3)) fst)
+ id = \x -> x
+*/
+
+/*
+init @@
+:- uniq |
+	// stack 
+	stk = [!Main],
+  // heap
+  // fst (pair 2 (snd 3))
+  !Main = sc([], app(app(app("pair", 2), app("snd", 3)), "fst")),
+  !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
+  !Fst  = sc(["x", "y"], "x"),
+  !Snd  = sc(["x", "y"], "y"),
+ // global
+  gbl = !G1,
+  !G1 = [ asc("main", !Main) | !G2 ],
+  !G2 = [ asc("pair", !Pair) | !G3 ],
+  !G3 = [ asc("fst" , !Fst ) | !G4 ],
+  !G4 = [ asc("snd" , !Snd ) | !Nil].
+*/
+
+/*
+ pair x y f = f x y
+ fst x y = x
+ snd x y = y
+ main = let rec 
+         list = pair 1 list
+        in
+        fst list
+*/
+
+/*
+init @@
+:- uniq |
+	// stack 
+	stk = [!Main],
+  // heap
+  // fst (pair 2 (snd 3))
+  !Main = sc([], 
+	     let_rec([ "list" = sc([], app(app("pair", 1), "list")) ],
+		     app("fst", "list")
+	     )),
+  !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
+  !Fst  = sc(["x", "y"], "x"),
+  !Snd  = sc(["x", "y"], "y"),
+ // global
+  gbl = !G1,
+  !G1 = [ asc("main", !Main) | !G2 ],
+  !G2 = [ asc("pair", !Pair) | !G3 ],
+  !G3 = [ asc("fst" , !Fst ) | !G4 ],
+  !G4 = [ asc("snd" , !Snd ) | !Nil].
+*/
+
+/*
+ pair x y f = f x y
+ fst x y = x
+ snd x y = y
+ list = pair 1 list
+ main = list fst
+*/
+
+/*
+init @@
+:- uniq |
+	// stack 
+	stk = [!Main],
+  // heap
+  // fst (pair 2 (snd 3))
+  !Main = sc([], app("list", "fst")),
+  !List = sc([], app(app("pair", 1), "list")),
+  !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
+  !Fst  = sc(["x", "y"], "x"),
+  !Snd  = sc(["x", "y"], "y"),
+
+ // global
+  gbl = !G1,
+  !G1 = [ asc("main", !Main) | !G2 ],
+  !G2 = [ asc("pair", !Pair) | !G3 ],
+  !G3 = [ asc("fst" , !Fst ) | !G4 ],
+  !G4 = [ asc("snd" , !Snd ) | !G5 ],
+  !G5 = [ asc("list", !List) | !Nil].
+*/
+
+
+/*
+ main = 
+  let rec 
+   a v= pair x b
+   b = pair y a
+  in
+  fst (snd (snd (snd a)))
+
+        in 3
+*/
+
+init @@
+:- uniq |
+	// stack 
+	stk = [!Main],
+  // heap
+  // fst (pair 2 (snd 3))
+  !Main = sc([], 
+	     let_rec([ "a" = sc(["x"], app("b", "x")),
+		       "b" = sc([], "a")
+		     ],
+		     3
+	     )),
+ // global
+  gbl = !G1,
+  !G1 = [ asc("main", !Main) | !Nil].
+
+
+//ti
 
     unwind @@
     stk = [!A|S], !A = app(!A1, A2) 
@@ -101,7 +264,7 @@ init @@
 	 !A0 = sc(Vs, Body),
 	 !Ar = zip_args(Vs, Body, !Gbl).
 
-    //{'$callback'(zerostep). 
+    {'$callback'(zerostep). 
 	
 	inst_number @@
 	R = inst(N, !F) 
@@ -196,7 +359,7 @@ init @@
 	    !F_ = [asc(V, !A3)|F],
 	    !A1 = app(!A2, !A3).
 
-    //}.
+    }.
 
 
 }.
