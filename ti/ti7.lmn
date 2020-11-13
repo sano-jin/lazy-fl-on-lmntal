@@ -260,11 +260,17 @@ init @@
     :- stk = [!A1, !A|S], !A = app(!A1, A2).
 
     instantiate @@
-    stk = [!A0|S], !A0 = sc(Vs, Body), gbl = !Gbl 
-    :- ground(Vs), ground(Body)
+    stk = [!A0|S], !A0 = sc([V|Vs], Body), gbl = !Gbl 
+    :- string(V), ground(Vs), ground(Body)
        | stk = [!Ar|S], gbl = !Gbl,
-	 !A0 = sc(Vs, Body),
-	 !Ar = zip_args(Vs, Body, !Gbl).
+	 !A0 = sc([V|Vs], Body),
+	 !Ar = zip_args([V|Vs], Body, !Gbl).
+
+    instantiate_0 @@
+    stk = [!A0|S], !A0 = sc([], Body), gbl = !Gbl 
+    :- ground(Body)
+       | stk = [!A0|S], gbl = !Gbl,
+	 !A0 = inst(Body, !Gbl).
 
     {'$callback'(zerostep). 
 	
@@ -272,10 +278,6 @@ init @@
 	R = inst(N, !F) 
 	:- int(N)
 	   | R = n(N).
-
-	finished_zip_args @@
-	R = zip_args([],Body, F) 
-	:- R = inst(Body, F).
 
 	inst_app @@
 	R = inst(app(E1, E2), !F) 
@@ -346,23 +348,31 @@ init @@
 */
 
 
-
 	append @@
 	R = append([H|T], L) 
 	:- R = [H|append(T, L)].
 
 	zip_args @@
 	stk = [!Ar,!A1|S], 
-	!Ar = zip_args([V|Vs], Body, F),
+	!Ar = zip_args([V, V2|Vs], Body, F),
 	!A1 = app(!A2, !A3)
 	:- 
 	    stk = [!Ar|S],
-	    !Ar = zip_args(Vs, Body, !F_),
+	    !Ar = zip_args([V2|Vs], Body, !F_),
 	    !F_ = [asc(V, !A3)|F],
 	    !A1 = app(!A2, !A3).
 
-    }.
+	zip_args_last1 @@
+	stk = [!Ar,!An|S], 
+	!Ar = zip_args([Vn], Body, F),
+	!An = app(!A2, !A3)
+	:- 
+	    stk = [!Ar|S],
+	    !Ar = inst(Body, !F_),
+	    !F_ = [asc(Vn, !A3)|F],
+	    !An >< !Ar.
 
+    }.
 
 }.
 
