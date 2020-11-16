@@ -3,7 +3,8 @@
       main = id 3
       id = \x -> x
     */
-/*
+
+
     init @@
     :- uniq |
 	// stack
@@ -12,12 +13,12 @@
     !Main = sc([], app("id", 3)),
     !Id = sc([ "x" ], "x"),
     // global
-    gbl = !Gbl,
-    !Gbl = [ asc("main", !Main) | !T ],
-    !T = [ asc("id", !Id) | !Nil].
-    */
+    gbl = !G1,
+    !G1 = [ asc("main", !Main) | !G2 ],
+    !G2 = [ asc("id"  , !Id  ) | !Nil].
 
-    /*
+
+/*
  main = id 3
  id = s k k
  s = \x y z -> x z (y z)
@@ -40,7 +41,8 @@
     !G2 = [ asc("id"  , !Id  ) | !G3 ],
     !G3 = [ asc("s"   , !S   ) | !G4 ],
     !G4 = [ asc("k"   , !K   ) | !Nil].
-  */
+*/
+
    
 /*
  main = let x = 3; y = id x in y
@@ -230,6 +232,7 @@ init @@
  twice f       = compose f f 
 */
 
+/*
 init @@
 :- uniq |
 	// stack 
@@ -245,7 +248,7 @@ init @@
   !G2 = [ asc("compose", !Compose) | !G3 ],
   !G3 = [ asc("twice"  , !Twice  ) | !G4 ],
   !G4 = [ asc("id"     , !Id     ) | !Nil].
-
+*/
 
 
 
