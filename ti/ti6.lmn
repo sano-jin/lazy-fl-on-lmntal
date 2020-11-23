@@ -104,7 +104,6 @@ init @@
  main = f 3 4
 */
 
-/*
 init @@
 :- uniq |
 	// stack 
@@ -131,7 +130,8 @@ init @@
   !G5 = [ asc("pair", !Pair) | !G6 ],
   !G6 = [ asc("k"   , !K   ) | !G7 ],
   !G7 = [ asc("k1"  , !K1  ) | !Nil].
-*/
+
+
 
 /*
  pair x y f = f x y
@@ -226,7 +226,7 @@ init @@
 /*
  main = 
   let rec 
-   a v= pair x b
+   a = pair x b
    b = pair y a
   in
   fst (snd (snd (snd a)))
@@ -234,6 +234,7 @@ init @@
         in 3
 */
 
+/*
 init @@
 :- uniq |
 	// stack 
@@ -249,11 +250,11 @@ init @@
   !G2 = [ asc("compose", !Compose) | !G3 ],
   !G3 = [ asc("twice"  , !Twice  ) | !G4 ],
   !G4 = [ asc("id"     , !Id     ) | !Nil].
+*/
 
 
 
-
-//ti
+// ti
 
     unwind @@
     stk = [!A|S], !A = app(!A1, A2) 
