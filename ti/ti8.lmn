@@ -106,7 +106,7 @@ init @@
  main = f 3 4
 */
 
-/*
+
 init @@
 :- uniq |
 	// stack 
@@ -133,7 +133,7 @@ init @@
   !G5 = [ asc("pair", !Pair) | !G6 ],
   !G6 = [ asc("k"   , !K   ) | !G7 ],
   !G7 = [ asc("k1"  , !K1  ) | !Nil].
-*/
+
 
 
 /*
