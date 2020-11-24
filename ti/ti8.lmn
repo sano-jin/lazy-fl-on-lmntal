@@ -1,8 +1,8 @@
-{
-    /*
+// {
+/*
       main = id 3
       id = \x -> x
-    */
+*/
 
 /*
     init @@
@@ -23,7 +23,7 @@
  id = s k k
  s = \x y z -> x z (y z)
  k = \x y -> x
-    */
+*/
 
 /*
     init @@
@@ -43,7 +43,7 @@
     !G4 = [ asc("k"   , !K   ) | !Nil].
 */
 
-   
+
 /*
  main = let x = 3; y = id x in y
  id = \x -> x
@@ -67,7 +67,7 @@ init @@
     !G2 = [asc("id", !Id)|!Nil].
 
 */
- 
+
 /*
  main = let rec x = id y; y = 3 in x
  id = \x -> x
@@ -80,8 +80,8 @@ init @@
 	stk = [!Main],
   // heap
   !Main = sc([], 
-	     let_rec([ "x" = sc([], app("id", "y")), 
-		   "y" = sc([], 3) ],
+	     let_rec([ "x" = app("id", "y"), 
+		       "y" = 3 ],
        		 "x"
 	     )),
   !Id = sc(["x"], "x"),
@@ -89,7 +89,7 @@ init @@
   gbl = !G1,
   !G1 = [asc("main", !Main)|!G2],
   !G2 = [asc("id", !Id)|!Nil].
-  */  
+*/
 
 /*
  K1 x y = y
@@ -114,8 +114,8 @@ init @@
   // heap
   !Main = sc([], app(app("f", 3), 4)),
   !F    = sc(["x", "y"], 	     
-	     let_rec([ "a" = sc([], app(app("pair", "x"), "b")), 
-		       "b" = sc([], app(app("pair", "y"), "a")) 
+	     let_rec([ "a" = app(app("pair", "x"), "b"), 
+		       "b" = app(app("pair", "y"), "a") 
 		     ],
        		     app("fst", app("snd", app("snd", app("snd", "a"))))
 	     )),
@@ -135,6 +135,7 @@ init @@
   !G7 = [ asc("k1"  , !K1  ) | !Nil].
 */
 
+
 /*
  pair x y f = f x y
  fst x y = x
@@ -143,6 +144,7 @@ init @@
  id = \x -> x
 */
 
+/*
 init @@
 :- uniq |
 	// stack 
@@ -159,6 +161,8 @@ init @@
   !G2 = [ asc("pair", !Pair) | !G3 ],
   !G3 = [ asc("fst" , !Fst ) | !G4 ],
   !G4 = [ asc("snd" , !Snd ) | !Nil].
+*/
+
 
 /*
  pair x y f = f x y
@@ -167,24 +171,23 @@ init @@
  main = let rec 
          list = pair 1 list
         in
-        fst list
+         fst list
 */
 
 /*
 init @@
 :- uniq |
-	// stack 
-	stk = [!Main],
+    // stack 
+    stk = [!Main],
   // heap
-  // fst (pair 2 (snd 3))
   !Main = sc([], 
-	     let_rec([ "list" = sc([], app(app("pair", 1), "list")) ],
-		     app("fst", "list")
+	     let_rec([ "list" = app(app("pair", 1), "list") ],
+		     app("list", "fst")
 	     )),
   !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
   !Fst  = sc(["x", "y"], "x"),
   !Snd  = sc(["x", "y"], "y"),
- // global
+  // global
   gbl = !G1,
   !G1 = [ asc("main", !Main) | !G2 ],
   !G2 = [ asc("pair", !Pair) | !G3 ],
@@ -206,7 +209,6 @@ init @@
 	// stack 
 	stk = [!Main],
   // heap
-  // fst (pair 2 (snd 3))
   !Main = sc([], app("list", "fst")),
   !List = sc([], app(app("pair", 1), "list")),
   !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
@@ -221,7 +223,6 @@ init @@
   !G4 = [ asc("snd" , !Snd ) | !G5 ],
   !G5 = [ asc("list", !List) | !Nil].
 */
-
 
 /*
  main          = twice twice twice id 3
@@ -252,131 +253,121 @@ init @@
 
 //ti
 
-    unwind @@
-    stk = [!A|S], !A = app(!A1, A2) 
-    :- stk = [!A1, !A|S], !A = app(!A1, A2).
+unwind @@
+stk = [!A|S], !A = app(!A1, A2) 
+  :- stk = [!A1, !A|S], !A = app(!A1, A2).
 
-    instantiate @@
-    stk = [!A0|S], !A0 = sc([V|Vs], Body), gbl = !Gbl 
-    :- string(V), ground(Vs), ground(Body)
-       | stk = [!Ar|S], gbl = !Gbl,
-	 !A0 = sc([V|Vs], Body),
-	 !Ar = zip_args([V|Vs], Body, !Gbl).
+instantiate_zip_args @@
+stk = [!A0|S], !A0 = sc([V|Vs], Body), gbl = !Gbl 
+  :- string(V), ground(Vs), ground(Body)
+     | stk = [!Ar|S], gbl = !Gbl,
+       !A0 = sc([V|Vs], Body),
+       !Ar = zip_args([V|Vs], Body, !Gbl).
 
-    instantiate_0 @@
-    stk = [!A0|S], !A0 = sc([], Body), gbl = !Gbl 
-    :- ground(Body)
-       | stk = [!A0|S], gbl = !Gbl,
-	 !A0 = inst(Body, !Gbl).
+instantiate_0 @@
+stk = [!A0|S], !A0 = sc([], Body), gbl = !Gbl 
+  :- ground(Body)
+     | stk = [!A0|S], gbl = !Gbl,
+       !A0 = inst(Body, !Gbl).
 
-    {'$callback'(zerostep). 
-	
-	inst_number @@
-	R = inst(N, !F) 
-	:- int(N)
-	   | R = n(N).
+// {'$callback'(zerostep). 
 
-	inst_app @@
-	R = inst(app(E1, E2), !F) 
-	:- R = app(!H1, !H2), 
-	     !H1 = inst(E1, !F),
-	     !H2 = inst(E2, !F).
+inst_number @@
+R = inst(N, !F) 
+  :- int(N)
+     | R = n(N).
 
-	inst_var_lookup @@
-	R = inst(V1, !F), !F = [asc(V2, A)|!T] 
-	:- string(V1), V1 \== V2 
-	   | R = inst(V1, !T), !F = [asc(V2, A)|!T].
-	
-	inst_var_resolve @@
-	R = inst(V1, !F), !F = [asc(V2, !A)|!T] 
-	:- string(V1), V1 == V2
-	   | R >< !A, !F = [asc(V2, !A)|!T].
+inst_app @@
+R = inst(app(E1, E2), !F) 
+  :- R = app(!H1, !H2), 
+     !H1 = inst(E1, !F),
+     !H2 = inst(E2, !F).
+
+inst_var_lookup @@
+R = inst(V1, !F), !F = [asc(V2, A)|!T] 
+  :- string(V1), V1 \== V2 
+     | R = inst(V1, !T), !F = [asc(V2, A)|!T].
+
+inst_var_resolve @@
+R = inst(V1, !F), !F = [asc(V2, !A)|!T] 
+  :- string(V1), V1 == V2
+     | R >< !A, !F = [asc(V2, !A)|!T].
 
 
 // Mark 2
-	/*
-	   let x = 1; y = 2; in exp
-           let([ "x" = sc([], 3), "y" = sc([], "x") ], "y" )).
-	*/
-	inst_let @@
-	R = inst(let([V = sc(Vs, Body)|Defs], Body_), Env)
-	:- R = inst(let(Defs, Body_), !F_),
-	   !F_ = [asc(V, sc_(Vs, Body))|Env].
+// let rec
+init_inst_letRec @@
+R = inst(let_rec(Defs, Body), Env)
+  :- R = inst_letRec(Defs, Body, Env, !F).
 
-	inst_let_finished @@
-	R = inst(let([], Body), Env)
-	:- R = inst(Body, Env).
+inst_letRec @@
+R = inst_letRec([V = Def | Defs], Body, OldEnv, !F)
+  :- R = inst_letRec(Defs, Body, !NewEnv, !F),
+     !PDef = waitingToInst(Def, !F),
+     !NewEnv = [asc(V, !PDef)|OldEnv].
 
-	inst_var_resolve_sc @@
-	R = inst(V1, !F), !F = [asc(V2, sc_(Vs, Body))|!T] 
-	:- string(V1), V1 == V2, ground(Vs), ground(Body)
-	   | R = zip_args(Vs, Body, !T), !F = [asc(V2, sc_(Vs, Body))|!T].
+inst_letRec_finished @@
+R = inst_letRec([], Body, !Env, !F) 
+:- R = inst_letRecRHS(Body, !Env), 
+   !Env >< !F.
 
-    // let rec
-    init_inst_let_rec @@
-    R = inst(let_rec(Defs, Body), !Env)
-    :- R = inst(let_rec(Defs, Body, !Env_), !Env).
+inst_letRecRHS @@
+R = inst_letRecRHS(Body, Env),
+  PDef = waitingToInst(Def, F)
+  :- R = inst_letRecRHS(Body, Env),
+     PDef = inst(Def, F).
 
-    inst_let_rec @@
-    R = inst(let_rec([V = sc(Vs, Body)|Defs], Body_, !F), Env)
-    :- R = inst(let_rec(Defs, Body_, !F), !F_),
-       !F_ = [asc(V, sc_(Vs, Body, !F))|Env].
-    
-    inst_let_rec_finished @@
-    R = inst(let_rec([], Body, !F), !Env)
-    :- R = inst(Body, !Env), 
-       !F >< !Env.
+inst_letRecRHS_finished @@
+R = inst_letRecRHS(Body, $env),
+  :- num($env) =:= 2
+     | R = inst(Body, $env).
 
-    inst_var_resolve_rec_sc_nil @@
-	R = inst(V1, !F), !F = [asc(V2, sc_([], Body, !Env))|!T] 
-	:- string(V1), V1 == V2, ground(Body)
-	   | R = inst(Body, !Env), !F = [asc(V2, sc_([], Body, !Env))|!T].
 
-    inst_var_resolve_rec_sc_cons @@
-	R = inst(V1, !F), !F = [asc(V2, sc_([V|Vs], Body, !Env))|!T] 
-	:- string(V1), V1 == V2, ground(Vs), ground(Body), ground(V)
-	   | R = zip_args([V|Vs], Body, !Env), !F = [asc(V2, sc_([V|Vs], Body, !Env))|!T].
+
+GC_app @@
+$r = app(!A1, !A2) :- num($r) =:= 1 | .
+
+GC_number @@
+!R = n(N) :- int(N), num(R) =:= 1 | .
+
+GC_sc @@
+!R = sc(Vs, Body) :- ground(Vs), ground(Body), num(R) =:= 1 | .
+
+
+append @@
+R = append([H|T], L) 
+  :- R = [H|append(T, L)].
+
+zip_args @@
+stk = [!Ar,!A1|S], 
+  !Ar = zip_args([V, V2|Vs], Body, F),
+  !A1 = app(!A2, !A3)
+  :- 
+    stk = [!Ar|S],
+    !Ar = zip_args([V2|Vs], Body, !F_),
+    !F_ = [asc(V, !A3)|F],
+    !A1 = app(!A2, !A3).
+
+zip_args_last1 @@
+stk = [!Ar,!An|S], 
+  !Ar = zip_args([Vn], Body, F),
+  !An = app(!A2, !A3)
+  :- 
+    stk = [!Ar|S],
+    !Ar = inst(Body, !F_),
+    !F_ = [asc(Vn, !A3)|F],
+    !An >< !Ar.
+
+// }.
+
+// }.
 
 /*
-	GC_app @@
-	!R = app(!A1, !A2) :- num(R) =:= 1 | .
-	
-	GC_number @@
-	!R = n(N) :- int(N), num(R) =:= 1 | .
-	
-	GC_sc @@
-	!R = sc(Vs, Body) :- ground(Vs), ground(Body), num(R) =:= 1 | .
-*/
-
-
-	append @@
-	R = append([H|T], L) 
-	:- R = [H|append(T, L)].
-
-	zip_args @@
-	stk = [!Ar,!A1|S], 
-	!Ar = zip_args([V, V2|Vs], Body, F),
-	!A1 = app(!A2, !A3)
-	:- 
-	    stk = [!Ar|S],
-	    !Ar = zip_args([V2|Vs], Body, !F_),
-	    !F_ = [asc(V, !A3)|F],
-	    !A1 = app(!A2, !A3).
-
-	zip_args_last1 @@
-	stk = [!Ar,!An|S], 
-	!Ar = zip_args([Vn], Body, F),
-	!An = app(!A2, !A3)
-	:- 
-	    stk = [!Ar|S],
-	    !Ar = inst(Body, !F_),
-	    !F_ = [asc(Vn, !A3)|F],
-	    !An >< !Ar.
-
-    }.
-
-}.
-
 final @@
 { stk = [!A], !A = n(N), $p[], @r }
+:- int(N) | result = N.
+*/
+
+final @@
+stk = [!A], !A = n(N)
 :- int(N) | result = N.

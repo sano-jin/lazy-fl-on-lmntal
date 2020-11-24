@@ -1,4 +1,4 @@
-{
+//{
     /*
       main = id 3
       id = \x -> x
@@ -104,6 +104,7 @@ init @@
  main = f 3 4
 */
 
+/*
 init @@
 :- uniq |
 	// stack 
@@ -130,7 +131,7 @@ init @@
   !G5 = [ asc("pair", !Pair) | !G6 ],
   !G6 = [ asc("k"   , !K   ) | !G7 ],
   !G7 = [ asc("k1"  , !K1  ) | !Nil].
-
+*/
 
 
 /*
@@ -200,13 +201,11 @@ init @@
  main = list fst
 */
 
-/*
 init @@
 :- uniq |
 	// stack 
 	stk = [!Main],
   // heap
-  // fst (pair 2 (snd 3))
   !Main = sc([], app("list", "fst")),
   !List = sc([], app(app("pair", 1), "list")),
   !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
@@ -220,7 +219,6 @@ init @@
   !G3 = [ asc("fst" , !Fst ) | !G4 ],
   !G4 = [ asc("snd" , !Snd ) | !G5 ],
   !G5 = [ asc("list", !List) | !Nil].
-*/
 
 
 /*
@@ -267,7 +265,7 @@ init @@
 	 !A0 = sc(Vs, Body),
 	 !Ar = zip_args(Vs, Body, !Gbl).
 
-    {'$callback'(zerostep). 
+//    {'$callback'(zerostep). 
 	
 	inst_number @@
 	R = inst(N, !F) 
@@ -362,11 +360,13 @@ init @@
 	    !F_ = [asc(V, !A3)|F],
 	    !A1 = app(!A2, !A3).
 
-    }.
+//    }.
 
 
-}.
+//}.
 
+/*
 final @@
 { stk = [!A], !A = n(N), $p[], @r }
 :- int(N) | result = N.
+*/
