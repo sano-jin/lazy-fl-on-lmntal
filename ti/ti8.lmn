@@ -1,4 +1,4 @@
-// {
+{
 /*
       main = id 3
       id = \x -> x
@@ -270,7 +270,7 @@ stk = [!A0|S], !A0 = sc([], Body), gbl = !Gbl
      | stk = [!A0|S], gbl = !Gbl,
        !A0 = inst(Body, !Gbl).
 
-// {'$callback'(zerostep). 
+{'$callback'(zerostep). 
 
 inst_number @@
 R = inst(N, !F) 
@@ -358,16 +358,19 @@ stk = [!Ar,!An|S],
     !F_ = [asc(Vn, !A3)|F],
     !An >< !Ar.
 
-// }.
+}.
 
-// }.
+}.
 
-/*
+
+
 final @@
 { stk = [!A], !A = n(N), $p[], @r }
 :- int(N) | result = N.
-*/
 
+
+/*
 final @@
 stk = [!A], !A = n(N)
 :- int(N) | result = N.
+*/
