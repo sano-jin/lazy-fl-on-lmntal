@@ -1,7 +1,7 @@
 {
     /*
       main = id 3
-      id = \x -> x
+      id x = x
     */
 
 /*
@@ -20,10 +20,10 @@
 */
 
     /*
- main = id 3
- id = s k k
- s = \x y z -> x z (y z)
- k = \x y -> x
+ main    = id 3
+ id      = s k k
+ s x y z = x z (y z)
+ k x y   = x
     */
 
 /*  
@@ -233,10 +233,10 @@
     */
 
     /*
- main          = twice twice twice id 3
- compose f g x = f (g x)
- id x          = x
- twice f       = compose f f 
+      main          = twice twice twice id 3
+      compose f g x = f (g x)
+      id x          = x
+      twice f       = compose f f 
     */
 
     /*
