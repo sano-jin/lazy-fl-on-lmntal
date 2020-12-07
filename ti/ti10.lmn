@@ -4,19 +4,20 @@
       id = \x -> x
     */
 
-    /*
+/*
     init @@
     :- uniq |
 	// stack
 	stk = [!Main],
+    dump = [],
     // heap 
-    !Main = sc([], app("id", 3)),
-    !Id = sc([ "x" ], "x"),
+    !Main = nSc([], eApp("id", 3)),
+    !Id   = nSc(["x"], "x"),
     // global
     gbl = !G1,
     !G1 = [ asc("main", !Main) | !G2 ],
     !G2 = [ asc("id"  , !Id  ) | !Nil].
-    */
+*/
 
     /*
  main = id 3
@@ -25,95 +26,99 @@
  k = \x y -> x
     */
 
-    /*
+/*  
     init @@
     :- uniq |
 	// stack 
 	stk = [!Main],
+    dump = [],
     // heap
-    !Main = sc([], app("id", 3)),
-    !Id   = sc([], app(app("s", "k"), "k")),
-    !S    = sc(["x", "y", "z"], app(app("x", "z"), app("y", "z"))),
-    !K    = sc(["x", "y"], "x"),
+    !Main = nSc([], eApp("id", 3)),
+    !Id   = nSc([], eApp(eApp("s", "k"), "k")),
+    !S    = nSc(["x", "y", "z"], eApp(eApp("x", "z"), eApp("y", "z"))),
+    !K    = nSc(["x", "y"], "x"),
     // global
     gbl = !G1,
     !G1 = [ asc("main", !Main) | !G2 ],
     !G2 = [ asc("id"  , !Id  ) | !G3 ],
     !G3 = [ asc("s"   , !S   ) | !G4 ],
     !G4 = [ asc("k"   , !K   ) | !Nil].
-    */
+*/
 
 
     /*
- main = let x = 3; y = id x in y
- id = \x -> x
+      main = let x = 3; y = id x in y
+      id x = x
     */
 
     /*
-init @@
-:- uniq |
-	    // stack 
-	    stk = [!Main],
-    // heap
-    !Main = sc([], 
-      let([ "x" = sc([], 3), 
-            "y" = sc([], app("id", "x")) ],
-       	  "y"
-      )),
-    !Id = sc(["x"], "x"),
-    // global
-    gbl = !G1,
-    !G1 = [asc("main", !Main)|!G2],
-    !G2 = [asc("id", !Id)|!Nil].
-
-    */
-
-    /*
- main = let rec x = id y; y = 3 in x
- id = \x -> x
-    */
-
-    /*
-init @@
-:- uniq |
-	// stack 
-	stk = [!Main],
-  // heap
-  !Main = sc([], 
-	     let_rec([ "x" = app("id", "y"), 
-		       "y" = 3 ],
-       		 "x"
-	     )),
-  !Id = sc(["x"], "x"),
-  // global
-  gbl = !G1,
-  !G1 = [asc("main", !Main)|!G2],
-  !G2 = [asc("id", !Id)|!Nil].
-    */
-
-    /*
- K1 x y = y
- K x y = x
- pair x y f = f x y
- fst p = p K
- snd p = p K1
- f x y = 
-  let_rec
-   a = pair x b
-   b = pair y a
-  in
-  fst (snd (snd (snd a)))
- main = f 3 4
-    */
-
-/*
     init @@
     :- uniq |
 	// stack 
 	stk = [!Main],
+    dump = [],
+    // heap
+    !Main = nSc([], 
+		let_rec([ "x" = 3, 
+			  "y" = eApp("id", "x") ],
+       			"y"
+		)),
+    !Id = nSc(["x"], "x"),
+      // global
+    gbl = !G1,
+    !G1 = [ asc("main", !Main) | !G2 ],
+    !G2 = [ asc("id"  , !Id  ) | !Nil].
+    */
+
+
+    /*
+      main = let rec x = id y; y = 3 in x
+      id x = x
+    */
+    /*
+    init @@
+    :- uniq |
+	// stack 
+	stk = [!Main],
+    dump = [],
+    // heap
+    !Main = nSc([], 
+	       let_rec([ "x" = eApp("id", "y"), 
+			 "y" = 3 ],
+       		       "x"
+	       )),
+    !Id = nSc(["x"], "x"),
+    // global
+    gbl = !G1,
+    !G1 = [ asc("main", !Main) | !G2 ],
+    !G2 = [ asc("id"  , !Id  ) | !Nil].
+    */
+
+    
+    /*
+      K1 x y = y
+      K x y = x
+      pair x y f = f x y
+      fst p = p K
+      snd p = p K1
+      f x y = 
+        let_rec
+          a = pair x b
+          b = pair y a
+        in
+          fst (snd (snd (snd a)))
+      main = f 3 4
+    */
+
+    /*
+    init @@
+    :- uniq |
+	// stack 
+	stk = [!Main],
+    dump = [],
     // heap
     !Main = nSc([], eApp(eApp("f", 3), 4)),
-    !F    = nSc(["x", "y"], 	     
+    !F    = nSc(["x", "y"],
 	       let_rec([ "a" = eApp(eApp("pair", "x"), "b"), 
 			 "b" = eApp(eApp("pair", "y"), "a") 
 		       ],
@@ -137,91 +142,94 @@ init @@
 
 
     /*
- pair x y f = f x y
- fst x y = x
- snd x y = y
- main = (((pair 2) (snd 3)) fst)
- id = \x -> x
+      pair x y f = f x y
+      fst x y = x
+      snd x y = y
+      main = (((pair 2) (snd 3)) fst)
+      id x = x
     */
 
     /*
-init @@
-:- uniq |
+    init @@
+    :- uniq |
 	// stack 
 	stk = [!Main],
-  // heap
-  // fst (pair 2 (snd 3))
-  !Main = sc([], app(app(app("pair", 2), app("snd", 3)), "fst")),
-  !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
-  !Fst  = sc(["x", "y"], "x"),
-  !Snd  = sc(["x", "y"], "y"),
- // global
-  gbl = !G1,
-  !G1 = [ asc("main", !Main) | !G2 ],
-  !G2 = [ asc("pair", !Pair) | !G3 ],
-  !G3 = [ asc("fst" , !Fst ) | !G4 ],
-  !G4 = [ asc("snd" , !Snd ) | !Nil].
+    dump = [],
+    // heap
+    // fst (pair 2 (snd 3))
+    !Main = nSc([], eApp(eApp(eApp("pair", 2), eApp("snd", 3)), "fst")),
+    !Pair = nSc(["x", "y", "f"], eApp(eApp("f", "x"), "y")),
+    !Fst  = nSc(["x", "y"], "x"),
+    !Snd  = nSc(["x", "y"], "y"),
+    // global
+    gbl = !G1,
+    !G1 = [ asc("main", !Main) | !G2 ],
+    !G2 = [ asc("pair", !Pair) | !G3 ],
+    !G3 = [ asc("fst" , !Fst ) | !G4 ],
+    !G4 = [ asc("snd" , !Snd ) | !Nil].
     */
 
 
     /*
- pair x y f = f x y
- fst x y = x
- snd x y = y
- main = let rec 
-         list = pair 1 list
-        in
-         fst list
+      pair x y f = f x y
+      fst x y = x
+      snd x y = y
+      main = let rec 
+               list = pair 1 list
+             in
+               fst list
     */
 
     /*
-init @@
-:- uniq |
-    // stack 
-    stk = [!Main],
-  // heap
-  !Main = sc([], 
-	     let_rec([ "list" = app(app("pair", 1), "list") ],
-		     app("list", "fst")
-	     )),
-  !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
-  !Fst  = sc(["x", "y"], "x"),
-  !Snd  = sc(["x", "y"], "y"),
-  // global
-  gbl = !G1,
-  !G1 = [ asc("main", !Main) | !G2 ],
-  !G2 = [ asc("pair", !Pair) | !G3 ],
-  !G3 = [ asc("fst" , !Fst ) | !G4 ],
-  !G4 = [ asc("snd" , !Snd ) | !Nil].
-    */
-
-    /*
- pair x y f = f x y
- fst x y = x
- snd x y = y
- list = pair 1 list
- main = list fst
-    */
-
-    /*
-init @@
-:- uniq |
+    init @@
+    :- uniq |
 	// stack 
 	stk = [!Main],
-  // heap
-  !Main = sc([], app("list", "fst")),
-  !List = sc([], app(app("pair", 1), "list")),
-  !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
-  !Fst  = sc(["x", "y"], "x"),
-  !Snd  = sc(["x", "y"], "y"),
+    dump = [],
+    // heap
+    !Main = nSc([], 
+	       let_rec([ "list" = eApp(eApp("pair", 1), "list") ],
+		       eApp("list", "fst")
+	       )),
+    !Pair = nSc(["x", "y", "f"], eApp(eApp("f", "x"), "y")),
+    !Fst  = nSc(["x", "y"], "x"),
+    !Snd  = nSc(["x", "y"], "y"),
+    // global
+    gbl = !G1,
+    !G1 = [ asc("main", !Main) | !G2 ],
+    !G2 = [ asc("pair", !Pair) | !G3 ],
+    !G3 = [ asc("fst" , !Fst ) | !G4 ],
+    !G4 = [ asc("snd" , !Snd ) | !Nil].
+    */
 
- // global
-  gbl = !G1,
-  !G1 = [ asc("main", !Main) | !G2 ],
-  !G2 = [ asc("pair", !Pair) | !G3 ],
-  !G3 = [ asc("fst" , !Fst ) | !G4 ],
-  !G4 = [ asc("snd" , !Snd ) | !G5 ],
-  !G5 = [ asc("list", !List) | !Nil].
+    /*
+      pair x y f = f x y
+      fst x y = x
+      snd x y = y
+      list = pair 1 list
+      main = list fst
+    */
+
+    /*
+    init @@
+    :- uniq |
+	// stack 
+	stk = [!Main],
+    dump = [],
+    // heap
+    !Main = nSc([], eApp("list", "fst")),
+    !List = nSc([], eApp(eApp("pair", 1), "list")),
+    !Pair = nSc(["x", "y", "f"], eApp(eApp("f", "x"), "y")),
+    !Fst  = nSc(["x", "y"], "x"),
+    !Snd  = nSc(["x", "y"], "y"),
+
+    // global
+    gbl = !G1,
+    !G1 = [ asc("main", !Main) | !G2 ],
+    !G2 = [ asc("pair", !Pair) | !G3 ],
+    !G3 = [ asc("fst" , !Fst ) | !G4 ],
+    !G4 = [ asc("snd" , !Snd ) | !G5 ],
+    !G5 = [ asc("list", !List) | !Nil].
     */
 
     /*
@@ -232,66 +240,69 @@ init @@
     */
 
     /*
-init @@
-:- uniq |
+    init @@
+    :- uniq |
 	// stack 
 	stk = [!Main],
-  // heap
-  !Main    = nSc([], eApp(eApp(eApp(eApp("twice", "twice"), "twice"), "id"), 3)),
-  !Compose = nSc(["f", "g", "x"], eApp("f", eApp("g", "x"))),
-  !Id      = nSc(["x"], "x"),
-  !Twice   = nSc(["f"], eApp(eApp("compose", "f"), "f")),  
- // global
-  gbl = !G1,
-  !G1 = [ asc("main"   , !Main   ) | !G2 ],
-  !G2 = [ asc("compose", !Compose) | !G3 ],
-  !G3 = [ asc("twice"  , !Twice  ) | !G4 ],
-  !G4 = [ asc("id"     , !Id     ) | !Nil].
+    dump = [],
+    // heap
+    !Main    = nSc([], eApp(eApp(eApp(eApp("twice", "twice"), "twice"), "id"), 3)),
+    !Compose = nSc(["f", "g", "x"], eApp("f", eApp("g", "x"))),
+    !Id      = nSc(["x"], "x"),
+    !Twice   = nSc(["f"], eApp(eApp("compose", "f"), "f")),  
+    // global
+    gbl = !G1,
+    !G1 = [ asc("main"   , !Main   ) | !G2 ],
+    !G2 = [ asc("compose", !Compose) | !G3 ],
+    !G3 = [ asc("twice"  , !Twice  ) | !G4 ],
+    !G4 = [ asc("id"     , !Id     ) | !Nil].
+    */
+    
 
+    /*
+      main = negate (id 3)
+    */
+
+    /*
+    init @@
+    :- uniq |
+	// stack 
+	stk = [!Main],
+    dump = [],
+    // heap
+    !Main   = nSc([], eApp("negate", eApp("id", 3))),
+    !Negate = nPrim(neg),
+    !Id     = nSc(["x"], "x"),
+    // global
+    gbl = !G1,
+    !G1 = [ asc("main"  , !Main  ) | !G2 ],
+    !G2 = [ asc("id"    , !Id    ) | !G3 ],
+    !G3 = [ asc("negate", !Negate) | !Nil].
     */
 
 
-/*
-  main = negate (id 3)
-*/
+    /*
+      // main = (id 1) + (-3)
+      main = plus (id 1) (negate 3)
+    */
 
-/*
-init @@
-:- uniq |
+
+    init @@
+    :- uniq |
 	// stack 
 	stk = [!Main],
-  dump = [],
-  // heap
-  !Main   = nSc([], eApp("negate", eApp("id", 3))),
-  !Negate = nPrim(neg),
-  !Id     = nSc(["x"], "x"),
- // global
-  gbl = !G1,
-  !G1 = [ asc("main"  , !Main  ) | !G2 ],
-  !G2 = [ asc("id"    , !Id    ) | !G3 ],
-  !G3 = [ asc("negate", !Negate) | !Nil].
-*/
-
-
-/*
-  main = plus 1 2
-*/
-
-init @@
-:- uniq |
-	// stack 
-	stk = [!Main],
-  dump = [],
-  // heap
-  !Main = nSc([], eApp(eApp("plus", eApp("id", 1)), eApp("id", 2))),
-  !Plus = nPrim(plus),
-  !Id     = nSc(["x"], "x"),
- // global
-  gbl = !G1,
-  !G1 = [ asc("main"  , !Main  ) | !G2 ],
-  !G2 = [ asc("id"    , !Id    ) | !G3 ],
-  !G3 = [ asc("plus"  , !Plus  ) | !Nil].
-
+    dump = [],
+    // heap
+    !Main = nSc([], eApp(eApp("plus", eApp("id", 1)), eApp("negate", 3))),
+    !Plus = nPrim(plus),
+    !Negate = nPrim(neg),
+    !Id   = nSc(["x"], "x"),
+    // global
+    gbl = !G1,
+    !G1 = [ asc("main"  , !Main  ) | !G2 ],
+    !G2 = [ asc("id"    , !Id    ) | !G3 ],
+    !G3 = [ asc("negate", !Negate) | !G4 ],
+    !G4 = [ asc("plus"  , !Plus  ) | !Nil].
 
 
     //ti
@@ -341,7 +352,6 @@ init @@
        !A = nPrim(Prim),
        !A1 = nApp(!A, !B1), 
        !A2 = nApp(!A1, !B2), !B2 = nSc(B2L, B2R).
-
 
 
   negate @@
