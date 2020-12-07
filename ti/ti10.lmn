@@ -25,6 +25,7 @@
  k = \x y -> x
     */
 
+    /*
     init @@
     :- uniq |
 	// stack 
@@ -40,6 +41,7 @@
     !G2 = [ asc("id"  , !Id  ) | !G3 ],
     !G3 = [ asc("s"   , !S   ) | !G4 ],
     !G4 = [ asc("k"   , !K   ) | !Nil].
+    */
 
 
     /*
@@ -110,18 +112,18 @@ init @@
 	// stack 
 	stk = [!Main],
     // heap
-    !Main = sc([], app(app("f", 3), 4)),
-    !F    = sc(["x", "y"], 	     
-	       let_rec([ "a" = app(app("pair", "x"), "b"), 
-			 "b" = app(app("pair", "y"), "a") 
+    !Main = nSc([], eApp(eApp("f", 3), 4)),
+    !F    = nSc(["x", "y"], 	     
+	       let_rec([ "a" = eApp(eApp("pair", "x"), "b"), 
+			 "b" = eApp(eApp("pair", "y"), "a") 
 		       ],
-       		       app("fst", app("snd", app("snd", app("snd", "a"))))
+       		       eApp("fst", eApp("snd", eApp("snd", eApp("snd", "a"))))
 	       )),
-    !Snd  = sc(["p"], app("p", "k1")),
-    !Fst  = sc(["p"], app("p", "k")),
-    !Pair = sc(["x", "y", "f"], app(app("f", "x"), "y")),
-    !K1   = sc(["x", "y"], "y"),
-    !K    = sc(["x", "y"], "x"),
+    !Snd  = nSc(["p"], eApp("p", "k1")),
+    !Fst  = nSc(["p"], eApp("p", "k")),
+    !Pair = nSc(["x", "y", "f"], eApp(eApp("f", "x"), "y")),
+    !K1   = nSc(["x", "y"], "y"),
+    !K    = nSc(["x", "y"], "x"),
     // global
     gbl = !G1,
     !G1 = [ asc("main", !Main) | !G2 ],
@@ -235,35 +237,157 @@ init @@
 	// stack 
 	stk = [!Main],
   // heap
-  !Main    = sc([], app(app(app(app("twice", "twice"), "twice"), "id"), 3)),
-  !Compose = sc(["f", "g", "x"], app("f", app("g", "x"))),
-  !Id      = sc(["x"], "x"),
-  !Twice   = sc(["f"], app(app("compose", "f"), "f")),  
+  !Main    = nSc([], eApp(eApp(eApp(eApp("twice", "twice"), "twice"), "id"), 3)),
+  !Compose = nSc(["f", "g", "x"], eApp("f", eApp("g", "x"))),
+  !Id      = nSc(["x"], "x"),
+  !Twice   = nSc(["f"], eApp(eApp("compose", "f"), "f")),  
  // global
   gbl = !G1,
   !G1 = [ asc("main"   , !Main   ) | !G2 ],
   !G2 = [ asc("compose", !Compose) | !G3 ],
   !G3 = [ asc("twice"  , !Twice  ) | !G4 ],
   !G4 = [ asc("id"     , !Id     ) | !Nil].
+
     */
+
+
+/*
+  main = negate (id 3)
+*/
+
+/*
+init @@
+:- uniq |
+	// stack 
+	stk = [!Main],
+  dump = [],
+  // heap
+  !Main   = nSc([], eApp("negate", eApp("id", 3))),
+  !Negate = nPrim(neg),
+  !Id     = nSc(["x"], "x"),
+ // global
+  gbl = !G1,
+  !G1 = [ asc("main"  , !Main  ) | !G2 ],
+  !G2 = [ asc("id"    , !Id    ) | !G3 ],
+  !G3 = [ asc("negate", !Negate) | !Nil].
+*/
+
+
+/*
+  main = plus 1 2
+*/
+
+init @@
+:- uniq |
+	// stack 
+	stk = [!Main],
+  dump = [],
+  // heap
+  !Main = nSc([], eApp(eApp("plus", eApp("id", 1)), eApp("id", 2))),
+  !Plus = nPrim(plus),
+  !Id     = nSc(["x"], "x"),
+ // global
+  gbl = !G1,
+  !G1 = [ asc("main"  , !Main  ) | !G2 ],
+  !G2 = [ asc("id"    , !Id    ) | !G3 ],
+  !G3 = [ asc("plus"  , !Plus  ) | !Nil].
 
 
 
     //ti
 
+    % Mark 4 (Arithmetic Operations)
+    pushStackOnDump_App1 @@
+    stk = [!A, !A1|T],
+    dump = Dump,
+    !A = nPrim(Prim),
+    !A1 = nApp(!A, !B), !B = nApp(B1, B2)
+    :- stk = [!B],
+       dump = [[!A, !A1|T]|Dump],
+       !A = nPrim(Prim),
+       !A1 = nApp(!A, !B), !B = nApp(B1, B2).
+
+    pushStackOnDump_Sc1 @@
+    stk = [!A, !A1|T],
+    dump = Dump,
+    !A = nPrim(Prim),
+    !A1 = nApp(!A, !B), !B = nSc(B1, B2)
+    :- stk = [!B],
+       dump = [[!A, !A1|T]|Dump],
+       !A = nPrim(Prim),
+       !A1 = nApp(!A, !B), !B = nSc(B1, B2).
+
+
+    pushStackOnDump_ArithApp2 @@
+    stk = [!A, !A1, !A2],
+    dump = Dump,
+    !A = nPrim(Prim),
+    !A1 = nApp(!A, !B1), 
+    !A2 = nApp(!A1, !B2), !B2 = nApp(B2L, B2R)
+    :- stk = [!B2],
+       dump = [[!A, !A1, !A2]|Dump],
+       !A = nPrim(Prim),
+       !A1 = nApp(!A, !B1),
+       !A2 = nApp(!A1, !B2), !B2 = nApp(B2L, B2R).
+
+    pushStackOnDump_ArithSc2 @@
+    stk = [!A, !A1, !A2],
+    dump = Dump,
+    !A = nPrim(Prim),
+    !A1 = nApp(!A, !B1), 
+    !A2 = nApp(!A1, !B2), !B2 = nSc(B2L, B2R)
+    :- stk = [!B2],
+       dump = [[!A, !A1, !A2]|Dump],
+       !A = nPrim(Prim),
+       !A1 = nApp(!A, !B1), 
+       !A2 = nApp(!A1, !B2), !B2 = nSc(B2L, B2R).
+
+
+
+  negate @@
+    stk = [!A, !A1],
+    dump = Dump,
+    !A = nPrim(neg),
+    !A1 = nApp(!A, !B), !B = nNum(Num)
+    :- _Num = - Num
+       | stk = [!A1],
+	 dump = Dump, 
+	 !A = nPrim(neg), 
+	 !A1 = nNum(_Num), !B = nNum(Num).
+    
+
+  plus @@
+    stk = [!A, !A1, !A2],
+    dump = Dump,
+    !A = nPrim(plus),  
+    !A1 = nApp(!A, !B1), !B1 = nNum(Num1),
+    !A2 = nApp(!A1, !B2), !B2 = nNum(Num2)
+    :- _Num = Num1 + Num2
+       | stk = [!A1],
+	 dump = Dump, 
+	 !A = nPrim(plus),  
+	 !A1 = nNum(_Num), !B1 = nNum(Num1),
+	 !B2 = nNum(Num2).
+	 
+
+    restoreTheStack_numStep  @@
+    stk = [!A], dump = [S|D], !A = nNum(Num)
+    :-  stk = S, dump = D, !A = nNum(Num).
+    
+
     unwind @@
-    stk = [!A|S], !A = app(!A1, A2) 
-    :- stk = [!A1, !A|S], !A = app(!A1, A2).
+    stk = [!A|S], !A = nApp(!A1, A2) 
+    :- stk = [!A1, !A|S], !A = nApp(!A1, A2).
 
     instantiate_zip_args @@
-    stk = [!A0|S], !A0 = sc([V|Vs], Body), gbl = !Gbl 
+    stk = [!A0|S], !A0 = nSc([V|Vs], Body), gbl = !Gbl 
     :- string(V), ground(Vs), ground(Body)
        | stk = [!Ar|S], gbl = !Gbl,
-	 !A0 = sc([V|Vs], Body),
+	 !A0 = nSc([V|Vs], Body),
 	 !Ar = zip_args([V|Vs], Body, !Gbl).
 
     instantiate_0 @@
-    stk = [!A0|S], !A0 = sc([], Body), gbl = !Gbl 
+    stk = [!A0|S], !A0 = nSc([], Body), gbl = !Gbl 
     :- ground(Body)
        | stk = [!A0|S], gbl = !Gbl,
 	 !A0 = inst(Body, !Gbl).
@@ -273,11 +397,11 @@ init @@
 	inst_number @@
 	R = inst(N, !F) 
 	:- int(N)
-	   | R = n(N).
+	   | R = nNum(N).
 
 	inst_app @@
-	R = inst(app(E1, E2), !F) 
-	:- R = app(!H1, !H2), 
+	R = inst(eApp(E1, E2), !F) 
+	:- R = nApp(!H1, !H2), 
 	   !H1 = inst(E1, !F),
 	   !H2 = inst(E2, !F).
 
@@ -323,13 +447,13 @@ init @@
 
 
 	GC_app @@
-	!R = app(!A1, !A2) :- num(R) =:= 1 | .
+	!R = nApp(!A1, !A2) :- num(R) =:= 1 | .
 
 	GC_number @@
-	!R = n(N) :- int(N), num(R) =:= 1 | .
+	!R = nNum(N) :- int(N), num(R) =:= 1 | .
 
 	GC_sc @@
-	!R = sc(Vs, Body) :- ground(Vs), ground(Body), num(R) =:= 1 | .
+	!R = nSc(Vs, Body) :- ground(Vs), ground(Body), num(R) =:= 1 | .
 
 	GC_env @@
 	!R = [asc(V, !Def)|!T] :- ground(V), num(R) =:= 1 |.
@@ -342,17 +466,17 @@ init @@
 	zip_args @@
 	stk = [!Ar,!A1|S], 
 	!Ar = zip_args([V, V2|Vs], Body, F),
-	!A1 = app(!A2, !A3)
+	!A1 = nApp(!A2, !A3)
 	:- 
 	    stk = [!Ar|S],
 	    !Ar = zip_args([V2|Vs], Body, !F_),
 	    !F_ = [asc(V, !A3)|F],
-	    !A1 = app(!A2, !A3).
+	    !A1 = nApp(!A2, !A3).
 
 	zip_args_last1 @@
 	stk = [!Ar,!An|S], 
 	!Ar = zip_args([Vn], Body, F),
-	!An = app(!A2, !A3)
+	!An = nApp(!A2, !A3)
 	:- 
 	    stk = [!Ar|S],
 	    !Ar = inst(Body, !F_),
@@ -366,7 +490,7 @@ init @@
 
 
 final @@
-{ stk = [!A], !A = n(N), $p[], @r }
+{ stk = [!A], dump = [], !A = nNum(N), $p[], @r }
   :- int(N) | result = N.
 
 
