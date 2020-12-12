@@ -1,0 +1,155 @@
+/*
+   main = S K K 3
+*/
+
+
+% compiler
+
+append_cons @@
+R = append([H|T], L)
+  :- R = [H|append(T, L)].
+
+append_nil @@
+R = append([], L)
+  :- R = L.
+
+/*
+init_length @@
+R = length(L)
+  :- R = length(L, 0).
+*/
+
+length_cons @@
+R = length([H|L], N)
+  :- Nplus1 = N + 1, ground(H)
+     | R = length(L, Nplus1).
+
+length_nil @@
+R = length([], N)
+  :- R = N.
+
+
+
+/*
+Program = [
+    "id" = sc(["x"], "x"),
+    "main" = sc([], eApp("id", 3))
+].
+*/
+
+Program = [
+    "k"    = sc(["x", "y"], "x"),
+    "s"    = sc(["x", "y", "z"], eApp(eApp("x", "z"), eApp("y", "z"))),
+    "id"   = sc([], eApp(eApp("s", "k"), "k")),
+    "main" = sc([], eApp("id", 3))
+].
+
+
+compile(Program).
+
+
+compileSC @@
+compile = [ Name = sc(Vs, Body) | SCs ]
+  :- ground(Vs)
+     | compile = SCs, 
+       m(Name, !A), 
+       !A = nGlobal([compileC(Body, Vs, 0), slide(length(Vs, 1)), unwind]).
+
+compiled @@
+compile = [] :- .
+
+compileFreeVar @@
+R = compileC(Var, [], N)
+  :- int(N), string(Var)
+     | R = pushGlobal(Var).
+
+compileLocalVar_lookup @@
+R = compileC(Var1, [Var2|Vs], N)
+  :- Var1 \== Var2, Nplus1 = N + 1
+     | R = compileC(Var1, Vs, Nplus1).
+
+compileLocalVar_resolve @@
+R = compileC(Var1, [Var2|Vs], N)
+  :- Var1 == Var2, ground(Vs)
+     | R = push(N).
+
+compileApp @@
+H = [ compileC(eApp(E0, E1), Env, N) | T ]
+  :- Nplus1 = N + 1, ground(Env)
+     | H = [ compileC(E1, Env, N), compileC(E0, Env, Nplus1), mkap | T ].
+
+
+compileInt @@
+R = compileC(Int, [], N)
+  :- int(N), int(Int)
+     | R = pushInt(Int).
+
+
+
+code = [pushGlobal("main"), unwind].
+
+
+// test
+% code = [push(0), slide(3), unwind].
+stack = [].
+
+% G-Machine
+
+pushGlobal @@
+code = [pushGlobal(F)|Is], stack = S, m(MF, !A)
+  :- F == MF
+     | code = Is, stack = [!A|S], m(MF, !A).
+
+pushInt @@
+code = [pushInt(N)|Is], stack = S
+  :- int(N)
+     | code = Is, stack = [!A|S], !A = nNum(N).
+
+
+mkap @@
+code = [mkap|Is], stack = [!A1, !A2|S]
+  :- code = Is, stack = [!A|S], !A = nApp(!A1, !A2).
+
+push @@
+code = [push(N)|Is], stack = S
+  :- Nplus1 = N + 1
+     | code = [pushing|Is], stack = [lookupStack(Nplus1)|S].
+
+pushLookup @@
+H = [lookupStack(N), A|T]
+  :- N > 0, N_1 = N - 1
+     | H = [A, lookupStack(N_1)|T].
+
+pushResolve @@
+code = [pushing|Is], stack = S, H = [lookupStack(0), !A|T], !A = nApp(Al, !Ar)
+  :- code = Is, stack = [!Ar|S], H = [!A|T], !A = nApp(Al, !Ar).
+
+
+slideN @@
+code = [slide(N)|Is], stack = [!A0, !A1|S]
+  :- N > 0, N_1 = N - 1
+     | code = [slide(N_1)|Is], stack = [!A0|S].
+
+slide0 @@
+code = [slide(0)|Is]
+:- code = Is.
+
+unwindApp @@
+code = [unwind], stack = [!A|S], !A = nApp(!A1, !A2)
+  :- code = [unwind], stack = [!A1, !A|S], !A = nApp(!A1, !A2).
+
+unwindInt @@
+code = [unwind], stack = [!A|S], !A = nNum(N)
+  :- int(N)
+     | code = [], stack = [!A|S], !A = nNum(N).
+
+unwindGlobal @@
+code = [unwind], stack = [!A0|S], !A0 = nGlobal(Cs)
+  :- ground(Cs)
+     | code = Cs, stack = [!A0|S], !A = nGlobal(Cs).
+
+
+final @@
+code = [], stack = [!A], !A = nNum(N)
+  :- int(N)
+     | result = N.
