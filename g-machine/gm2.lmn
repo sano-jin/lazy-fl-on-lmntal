@@ -49,7 +49,7 @@ compileSC(Program).
 % Also, adds the "<name of the super combinator> -> <the address of the global node>"
 % binding "m(Name, Address)" to the global environment.
 compileSC @@
-    compileSC = [ [Name|Vs] = Body | SCs ]
+compileSC = [ [Name|Vs] = Body | SCs ]
   :- ground(Vs)
      | compileSC = SCs, 
        m(Name, !A), 
