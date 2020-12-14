@@ -32,10 +32,10 @@ R = length([], N)
   :- R = N.
 
 
-% Main functions for compiling starts from here.
+% Main functions for the compiling starts from here.
 compileSC(Program).
 
-% Compile the super combinators.
+% Compiles the super combinators.
 % This turns the super combinator expression to the global node
 % with the code (the compiled body of the super combinator) embedded in it
 % as "nGlobal(<the code>)".
@@ -44,7 +44,7 @@ compileSC(Program).
 %  , slide(<the number of the variable plus 1>)
 %  , unwind 
 %  ]".
-% Also, add the "<name of the super combinator> -> <the address of the global node>"
+% Also, adds the "<name of the super combinator> -> <the address of the global node>"
 % binding "m(Name, Address)" to the global environment.
 compileSC @@
 compileSC = [ Name = sc(Vs, Body) | SCs ]
@@ -57,11 +57,11 @@ compileSC = [ Name = sc(Vs, Body) | SCs ]
 compiledSC @@ 
 compileSC = [] :- .
 
-% The "compileC" compiles the expression and turn it to the code.
+% The "compileC" compiles the expression and turns it to the code.
 % compileC(<expression to compile>, <environment>, <de bruijn index (based index)>)
 
 % Looks up and the get the de bruijn index
-% (...based index considering the change of the length of the stack through push).
+% (...based index considering the change of the length of the stack through pushes).
 compileLocalVar_lookup @@
 R = compileC(Var1, [Var2|Vs], N)
   :- Var1 \== Var2, Nplus1 = N + 1
