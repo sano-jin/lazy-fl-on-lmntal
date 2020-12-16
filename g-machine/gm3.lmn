@@ -1,0 +1,185 @@
+/*
+   G-Machine on LMNtal
+*/
+
+{
+% Some tests
+
+/*
+Program = [
+    ["id", "x"] = "x",
+    ["main"   ] = ("id", 3)
+].
+*/
+
+% /*
+Program = [
+    ["k", "x", "y"     ] = "x",
+    ["s", "x", "y", "z"] = (("x", "z"), ("y", "z")),
+    ["id"              ] = (("s", "k"), "k"),
+    ["main"            ] = ("id", 3)
+].
+% */
+
+% compiler
+
+% Some helper functions for the compiler.
+length_cons @@
+R = length([H|L], N)
+  :- Nplus1 = N + 1, ground(H)
+     | R = length(L, Nplus1).
+
+length_nil @@
+R = length([], N)
+  :- R = N.
+
+
+% Main functions for the compiling starts from here.
+compileSC(Program).
+
+% Compiles the super combinators.
+% This turns the super combinator expression to the global node
+% with the code (the compiled body of the super combinator) embedded in it
+% as "nGlobal(<the code>)".
+% The embedded code will be as
+% "[ <the codes obtained from the compileC below>
+%  , slide(<the number of the variable plus 1>)
+%  , unwind 
+%  ]".
+% Also, adds the "<name of the super combinator> -> <the address of the global node>"
+% binding "m(Name, Address)" to the global environment.
+compileSC @@
+compileSC = [ [Name|Vs] = Body | SCs ]
+  :- ground(Vs)
+     | compileSC = SCs, 
+       m(Name, !A), 
+       !A = nGlobal([compileC(Body, Vs, 0), slide(length(Vs, 1)), unwind]).
+
+
+compiledSC @@ 
+compileSC = [] :- .
+
+% The "compileC" compiles the expression and turns it to the code.
+% compileC(<expression to compile>, <environment>, <de bruijn index (based index)>)
+
+% Looks up and the get the de bruijn index
+% (...based index considering the change of the length of the stack through pushes).
+compileLocalVar_lookup @@
+R = compileC(Var1, [Var2|Vs], N)
+  :- Var1 \== Var2, Nplus1 = N + 1
+     | R = compileC(Var1, Vs, Nplus1).
+
+% If the variable is in the environment, the variable is a local variable and
+% it can be "pushed" with the de bruijn index (based index) from the stack.
+compileLocalVar_resolve @@
+R = compileC(Var1, [Var2|Vs], N)
+  :- Var1 == Var2, ground(Vs)
+     | R = push(N).
+
+% If the variable is NOT in the environment, the variable is a free variable and
+% it should be "pushed" from the global environment through "pushGlobal".
+compileFreeVar @@
+R = compileC(Var, [], N)
+  :- int(N), string(Var)
+     | R = pushGlobal(Var).
+
+% Application is compiled into the postfix-notated code
+% like "(E0, E1) -> [E1, E0, mkap]".
+% However, the de bruijn index (based index) on the E0 should be increased by 1
+% with the consideration of the increasement of the length of the stack.
+compileApp @@
+H = [ compileC((E0, E1), Env, N) | T ]
+  :- Nplus1 = N + 1, ground(Env)
+     | H = [ compileC(E1, Env, N), compileC(E0, Env, Nplus1), mkap | T ].
+
+% If the expression is an integer, the code should be the "pushInt"
+compileInt @@
+R = compileC(Int, [], N)
+  :- int(N), int(Int)
+     | R = pushInt(Int).
+
+
+% The initial code and the stack.
+% (The initial heap (global nodes) and global environment 
+%  will be produced by compiling the expression (super combinators))
+initial = [code, pushGlobal("main"), unwind].
+stack = [].
+
+
+
+% G-Machine
+
+% Looks up the global node and pushes the address to the top of the stack.
+pushGlobal @@
+Code = [code, pushGlobal(F)|Is], stack = S, m(MF, !A)
+  :- F == MF
+     | Code = [pushGlobal(F), code|Is], stack = [!A|S], m(MF, !A).
+
+% Makes the number node and pushes the address.
+pushInt @@
+Code = [code, pushInt(N)|Is], stack = S
+  :- int(N)
+     | Code = [pushInt(N), code|Is], stack = [!A|S], !A = nNum(N).
+
+% Make application node of the top 2 addresses on the stack.
+mkap @@
+Code = [code, mkap|Is], stack = [!A1, !A2|S]
+  :- Code = [mkap, code|Is], stack = [!A|S], !A = nApp(!A1, !A2).
+
+% Push the address of the local variable on the Nth element on the stack.
+% Put the stopper "pushing" on the head of the code when pushing.
+push @@
+Code = [code, push(N)|Is], stack = S
+  :- Nplus1 = N + 1
+     | Code = [push(N), code, pushing|Is], stack = [lookupStack(Nplus1)|S].
+
+% Traverse the stack to accomplish the push of the Nth element on the stack.
+pushLookup @@
+H = [lookupStack(N), A|T]
+  :- N > 0, N_1 = N - 1
+     | H = [A, lookupStack(N_1)|T].
+
+% Push the Nth element on the stack and clear the stopper "pushing".
+pushResolve @@
+Code = [code, pushing|Is], stack = S, H = [lookupStack(0), !A|T], !A = nApp(Al, !Ar)
+  :- Code = [code|Is], stack = [!Ar|S], H = [!A|T], !A = nApp(Al, !Ar).
+
+% Slides the top of the stack N and discard the slided elements.
+slideN @@
+Code = [code, slide(N)|Is]
+  :- int(N)
+     | Code = [slide(N), code, sliding(N)|Is].
+
+slideN @@
+Code = [code, sliding(N)|Is], stack = [!A0, !A1|S]
+  :- N > 0, N_1 = N - 1
+     | Code = [code, sliding(N_1)|Is], stack = [!A0|S].
+
+slide0 @@
+Code = [code, sliding(0)|Is]
+  :- Code = [code|Is].
+
+% Unwind application node.
+unwindApp @@
+Code = [code, unwind], stack = [!A|S], !A = nApp(!A1, !A2)
+  :- Code = [code, unwind], stack = [!A1, !A|S], !A = nApp(!A1, !A2).
+
+% Unwind the number node.
+% This is the final operation.
+unwindInt @@
+Code = [code, unwind], stack = [!A|S], !A = nNum(N)
+  :- int(N)
+     | Code = [unwind, code], stack = [!A|S], !A = nNum(N).
+
+% Unwind the global node and pushes the codes to the code.
+unwindGlobal @@
+Code = [code, unwind], stack = [!A0|S], !A0 = nGlobal(Cs)
+  :- Code = [unwind], stack = [!A0|S], !A = nGlobal([code|Cs]).
+
+}.
+
+% The simple garbage collector after the final step.
+final @@
+{Code = [code], stack = [!A], !A = nNum(N), $p[Code], @r}
+  :- int(N)
+     | result = N.
