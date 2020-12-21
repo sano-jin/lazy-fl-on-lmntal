@@ -29,7 +29,7 @@ Program = [
 ].
 //*/
 
-% compiler
+% Compiler
 
 % Some helper functions for the compiler.
 length_init @@
@@ -116,7 +116,7 @@ R = compileC(Int, [], N)
 
 % The initial code and the stack.
 % (The initial heap (global nodes) and global environment 
-%  will be produced by compiling the expression (super combinators))
+% will be produced by compiling the expression (super combinators))
 code = [pushGlobal("main"), unwind].
 stack = [].
 
@@ -179,7 +179,7 @@ H = updateStack(0, !A, [!Ai|S]), !Ai = nGlobal(Body), code = [updating|Is]
      | H = [!Ai|S], !Ai >< !A, code = Is.
 
 
-% clear the N element from the top of the stack.
+% clear the top N element of the stack.
 popN @@
 code = [pop(N)|Is], stack = [!A0|S]
   :- N > 0, N_1 = N - 1
@@ -189,28 +189,6 @@ pop0 @@
 code = [pop(0)|Is]
 :- code = Is.
 
-
-/*
-% Slides the top of the stack N and discard the slided elements.
-slideN @@
-code = [slide(N)|Is], stack = [!A0, !A1|S]
-  :- N > 0, N_1 = N - 1
-     | code = [slide(N_1)|Is], stack = [!A0|S].
-
-slide0 @@
-code = [slide(0)|Is]
-:- code = Is.
-
-% Slides the top of the stack N and discard the slided elements.
-slideN @@
-code = [slide(N)|Is], stack = [!A0, !A1|S]
-  :- N > 0, N_1 = N - 1
-     | code = [slide(N_1)|Is], stack = [!A0|S].
-
-slide0 @@
-code = [slide(0)|Is]
-:- code = Is.
-*/
 
 % Unwind application node.
 unwindApp @@

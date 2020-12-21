@@ -12,14 +12,23 @@ Program = [
 ].
 */
 
-% /*
+/*
 Program = [
     ["k", "x", "y"     ] = "x",
     ["s", "x", "y", "z"] = (("x", "z"), ("y", "z")),
     ["id"              ] = (("s", "k"), "k"),
     ["main"            ] = ("id", 3)
 ].
-% */
+*/
+
+
+Program = [
+    ["twice", "f", "x"] = ("f", ("f", "x")),
+    ["id", "x"        ] = "x",
+    ["main"           ] = ((("twice", "twice"), "id"), 3)
+].
+
+
 
 % compiler
 
@@ -170,7 +179,7 @@ code = [unwind], stack = [!A|S], !A = nNum(N)
 unwindGlobal @@
 code = [unwind], stack = [!A0|S], !A0 = nGlobal(Cs)
   :- ground(Cs)
-     | code = Cs, stack = [!A0|S], !A = nGlobal(Cs).
+     | code = Cs, stack = [!A0|S], !A0 = nGlobal(Cs).
 
 }.
 
