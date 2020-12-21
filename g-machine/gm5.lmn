@@ -21,13 +21,31 @@ Program = [
 ].
 */
 
-///*
+/*
 Program = [
     ["twice", "f", "x"] = ("f", ("f", "x")),
     ["id", "x"        ] = "x",
     ["main"           ] = ((("twice", "twice"), "id"), 3)
 ].
-//*/
+*/
+
+    /*
+ pair x y f = f x y
+ fst x y = x
+ snd x y = y
+ list = pair 1 list
+ main = list snd fst
+    */
+
+   
+Program = [
+    ["list"               ] = (("pair", 1), "list"),
+    ["pair", "x", "y", "f"] = (("f", "x"), "y"),
+    ["fst", "x", "y"      ] = "x",
+    ["snd", "x", "y"      ] = "y",
+    ["main"               ] = (("list", "snd"), "fst")
+].
+
 
 % Compiler
 

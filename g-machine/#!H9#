@@ -7629,4 +7629,21 @@ slim --hl -t gm5.lmn
 ---->final
 187: result(3). @5. 
 result(3). @5. 
-sano@uedalabnoair g-machine % o
+sano@uedalabnoair g-machine % git add --all
+git add --all
+sano@uedalabnoair g-machine % git commit -m updated
+git commit -m updated
+[master 2c01ee8] updated
+ 4 files changed, 6770 insertions(+), 29 deletions(-)
+sano@uedalabnoair g-machine % git push
+git push
+Enumerating objects: 13, done.
+Counting objects: 100% (13/13), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (7/7), done.
+Writing objects: 100% (7/7), 51.65 KiB | 2.72 MiB/s, done.
+Total 7 (delta 5), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (5/5), completed with 3 local objects.        
+To github.com:sano-jin/lazy-fl-on-lmntal.git
+   790b39a..2c01ee8  master -> master
+sano@uedalabnoair g-machine % 

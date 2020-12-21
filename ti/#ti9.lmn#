@@ -297,22 +297,25 @@ init @@
     //ti
 
     % Mark 4 (Arithmetic Operations)
-    pushStackOnDump_NegApp @@
+    pushStackOnDump_App1 @@
     stk = [!A, !A1|T],
     dump = Dump,
-    !A = nPrim(Prim),  !A1 = nApp(!A, !B), !B = nApp(B1, B2)
+    !A = nPrim(Prim),
+    !A1 = nApp(!A, !B), !B = nApp(B1, B2)
     :- stk = [!B],
        dump = [[!A, !A1|T]|Dump],
-       !A = nPrim(Prim),  !A1 = nApp(!A, !B), !B = nApp(B1, B2).
+       !A = nPrim(Prim),
+       !A1 = nApp(!A, !B), !B = nApp(B1, B2).
 
-    pushStackOnDump_NegSc @@
+    pushStackOnDump_Sc1 @@
     stk = [!A, !A1|T],
     dump = Dump,
-    !A = nPrim(Prim),  !A1 = nApp(!A, !B), !B = nSc(B1, B2)
+    !A = nPrim(Prim),
+    !A1 = nApp(!A, !B), !B = nSc(B1, B2)
     :- stk = [!B],
        dump = [[!A, !A1|T]|Dump],
-       !A = nPrim(Prim),  !A1 = nApp(!A, !B), !B = nSc(B1, B2).
-
+       !A = nPrim(Prim),
+       !A1 = nApp(!A, !B), !B = nSc(B1, B2).
 
 
     pushStackOnDump_ArithApp2 @@
@@ -340,14 +343,17 @@ init @@
        !A2 = nApp(!A1, !B2), !B2 = nSc(B2L, B2R).
 
 
+
   negate @@
     stk = [!A, !A1],
     dump = Dump,
-    !A = nPrim(neg),  !A1 = nApp(!A, !B), !B = nNum(Num)
+    !A = nPrim(neg),
+    !A1 = nApp(!A, !B), !B = nNum(Num)
     :- _Num = - Num
        | stk = [!A1],
 	 dump = Dump, 
-	 !A = nPrim(neg),  !A1 = nNum(_Num), !B = nNum(Num).
+	 !A = nPrim(neg), 
+	 !A1 = nNum(_Num), !B = nNum(Num).
     
 
   plus @@
@@ -367,14 +373,11 @@ init @@
     restoreTheStack_numStep  @@
     stk = [!A], dump = [S|D], !A = nNum(Num)
     :-  stk = S, dump = D, !A = nNum(Num).
-
     
 
     unwind @@
     stk = [!A|S], !A = nApp(!A1, A2) 
     :- stk = [!A1, !A|S], !A = nApp(!A1, A2).
-
-
 
     instantiate_zip_args @@
     stk = [!A0|S], !A0 = nSc([V|Vs], Body), gbl = !Gbl 
@@ -487,7 +490,7 @@ init @@
 
 
 final @@
-{ stk = [!A], !A = nNum(N), $p[], @r }
+{ stk = [!A], dump = [], !A = nNum(N), $p[], @r }
   :- int(N) | result = N.
 
 
