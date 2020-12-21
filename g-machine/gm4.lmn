@@ -24,6 +24,10 @@ Program = [
 % compiler
 
 % Some helper functions for the compiler.
+length_init @@
+R = length(L) 
+  :- R = length(L, 0).
+
 length_cons @@
 R = length([H|L], N)
   :- Nplus1 = N + 1, ground(H)
@@ -53,7 +57,11 @@ compileSC = [ [Name|Vs] = Body | SCs ]
   :- ground(Vs)
      | compileSC = SCs, 
        m(Name, !A), 
-       !A = nGlobal([compileC(Body, Vs, 0), slide(length(Vs, 1)), unwind]).
+       !A = nGlobal([ compileC(Body, Vs, 0),
+		      update(length(Vs)), 
+		      pop(length(Vs)), 
+		      unwind
+		    ]).
 
 
 compiledSC @@ 
@@ -144,6 +152,42 @@ pushResolve @@
 Code = [code, pushing|Is], stack = S, H = [lookupStack(0), !A|T], !A = nApp(Al, !Ar)
   :- Code = [code|Is], stack = [!Ar|S], H = [!A|T], !A = nApp(Al, !Ar).
 
+% Update the Nth element of the stack.
+update @@
+Code = [code, update(N)|Is], stack = [!A|S]
+  :- int(N)
+     | Code = [update(N), updating|Is], stack = [!A|updateStack(N, !A, S)].
+
+updateStackN @@
+H = updateStack(N, A, [Ai|T])
+  :- N > 0, N_1 = N - 1
+     | H = [Ai|updateStack(N_1, A, T)].
+
+updateStack0nApp @@
+H = updateStack(0, !A, [!An|T]), !An = nApp(!AL, !AR), Code = updating
+  :- H = [!An|T], !A >< !An, Code = code.
+
+updateStack0nGlobal @@
+H = updateStack(0, !A, [!An|T]), !An = nGlobal(Body), Code = updating
+  :- ground(Body)
+     | H = [!An|T], !A >< !An, Code = code.
+
+% Pop the Nth element of the stack.
+pop @@
+Code = [code, pop(N)|Is]
+  :- int(N)
+     | Code = [pop(N), poppingStack(N)|Is].
+
+popStackN @@
+Code = poppingStack(N), stack = [!A|S]
+  :- N > 0, N_1 = N - 1
+     | Code = poppingStack(N_1), stack = S.
+
+popStack0 @@
+Code = poppingStack(0)
+  :- Code = code.
+
+/*
 % Slides the top of the stack N and discard the slided elements.
 slideN @@
 Code = [code, slide(N)|Is]
@@ -156,8 +200,10 @@ Code = [code, sliding(N)|Is], stack = [!A0, !A1|S]
      | Code = [code, sliding(N_1)|Is], stack = [!A0|S].
 
 slide0 @@
-Code = [code, sliding(0)|Is]
-  :- Code = [code|Is].
+Code = [code, sliding(0), !A|Is]
+  :- Code = [code, !A|Is].
+*/
+
 
 % Unwind application node.
 unwindApp @@
@@ -173,8 +219,8 @@ Code = [code, unwind], stack = [!A|S], !A = nNum(N)
 
 % Unwind the global node and pushes the codes to the code.
 unwindGlobal @@
-Code = [code, unwind], stack = [!A0|S], !A0 = nGlobal(Cs)
-  :- Code = [unwind], stack = [!A0|S], !A0 = nGlobal([code|Cs]).
+Code = [code, unwind], stack = [!A|S], !A = nGlobal(Cs)
+  :- Code = [unwind], stack = [!A|S], !A = nGlobal([code|Cs]).
 
 }.
 

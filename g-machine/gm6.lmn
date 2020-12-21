@@ -102,7 +102,7 @@ R = compileC(Int, [], N)
 % The initial code and the stack.
 % (The initial heap (global nodes) and global environment 
 %  will be produced by compiling the expression (super combinators))
-initial = [code, pushGlobal("main"), unwind].
+code = [pushGlobal("main"), unwind].
 stack = [].
 
 
@@ -111,27 +111,27 @@ stack = [].
 
 % Looks up the global node and pushes the address to the top of the stack.
 pushGlobal @@
-Code = [code, pushGlobal(F)|Is], stack = S, m(MF, !A)
+code = [pushGlobal(F)|Is], stack = S, m(MF, !A)
   :- F == MF
-     | Code = [pushGlobal(F), code|Is], stack = [!A|S], m(MF, !A).
+     | code = Is, stack = [!A|S], m(MF, !A).
 
 % Makes the number node and pushes the address.
 pushInt @@
-Code = [code, pushInt(N)|Is], stack = S
+code = [pushInt(N)|Is], stack = S
   :- int(N)
-     | Code = [pushInt(N), code|Is], stack = [!A|S], !A = nNum(N).
+     | code = Is, stack = [!A|S], !A = nNum(N).
 
 % Make application node of the top 2 addresses on the stack.
 mkap @@
-Code = [code, mkap|Is], stack = [!A1, !A2|S]
-  :- Code = [mkap, code|Is], stack = [!A|S], !A = nApp(!A1, !A2).
+code = [mkap|Is], stack = [!A1, !A2|S]
+  :- code = Is, stack = [!A|S], !A = nApp(!A1, !A2).
 
 % Push the address of the local variable on the Nth element on the stack.
 % Put the stopper "pushing" on the head of the code when pushing.
 push @@
-Code = [code, push(N)|Is], stack = S
+code = [push(N)|Is], stack = S
   :- Nplus1 = N + 1
-     | Code = [push(N), code, pushing|Is], stack = [lookupStack(Nplus1)|S].
+     | code = [pushing|Is], stack = [lookupStack(Nplus1)|S].
 
 % Traverse the stack to accomplish the push of the Nth element on the stack.
 pushLookup @@
@@ -141,45 +141,50 @@ H = [lookupStack(N), A|T]
 
 % Push the Nth element on the stack and clear the stopper "pushing".
 pushResolve @@
-Code = [code, pushing|Is], stack = S, H = [lookupStack(0), !A|T], !A = nApp(Al, !Ar)
-  :- Code = [code|Is], stack = [!Ar|S], H = [!A|T], !A = nApp(Al, !Ar).
+code = [pushing|Is], stack = S, H = [lookupStack(0), !A|T], !A = nApp(Al, !Ar)
+  :- code = Is, stack = [!Ar|S], H = [!A|T], !A = nApp(Al, !Ar).
 
 % Slides the top of the stack N and discard the slided elements.
 slideN @@
-Code = [code, slide(N)|Is]
-  :- int(N)
-     | Code = [slide(N), code, sliding(N)|Is].
+code = [slide(N)|Is], stack = [!A0, !A1|S]
+  :- N > 1, N_1 = N - 1
+     | code = [slide(N_1)|Is], stack = [!A0|S].
 
-slideN @@
-Code = [code, sliding(N)|Is], stack = [!A0, !A1|S]
-  :- N > 0, N_1 = N - 1
-     | Code = [code, sliding(N_1)|Is], stack = [!A0|S].
+slide1nApp @@
+code = [slide(1)|Is], stack = [!A0, !A1|S], !A1 = nApp(!AL, !AR)
+  :- code = Is, stack = [!A0|S], !A1 >< !A0.
+
+slide1nGlobal @@
+code = [slide(1)|Is], stack = [!A0, !A1|S], !A1 = nGlobal(Body)
+  :- ground(Body)
+     | code = Is, stack = [!A0|S], !A1 >< !A0.
 
 slide0 @@
-Code = [code, sliding(0)|Is]
-  :- Code = [code|Is].
+code = [slide(0)|Is]
+:- code = Is.
 
 % Unwind application node.
 unwindApp @@
-Code = [code, unwind], stack = [!A|S], !A = nApp(!A1, !A2)
-  :- Code = [code, unwind], stack = [!A1, !A|S], !A = nApp(!A1, !A2).
+code = [unwind], stack = [!A|S], !A = nApp(!A1, !A2)
+  :- code = [unwind], stack = [!A1, !A|S], !A = nApp(!A1, !A2).
 
 % Unwind the number node.
 % This is the final operation.
 unwindInt @@
-Code = [code, unwind], stack = [!A|S], !A = nNum(N)
+code = [unwind], stack = [!A|S], !A = nNum(N)
   :- int(N)
-     | Code = [unwind, code], stack = [!A|S], !A = nNum(N).
+     | code = [], stack = [!A|S], !A = nNum(N).
 
 % Unwind the global node and pushes the codes to the code.
 unwindGlobal @@
-Code = [code, unwind], stack = [!A0|S], !A0 = nGlobal(Cs)
-  :- Code = [unwind], stack = [!A0|S], !A0 = nGlobal([code|Cs]).
+code = [unwind], stack = [!A0|S], !A0 = nGlobal(Cs)
+  :- ground(Cs)
+     | code = Cs, stack = [!A0|S], !A0 = nGlobal(Cs).
 
 }.
 
 % The simple garbage collector after the final step.
 final @@
-{Code = [code], stack = [!A], !A = nNum(N), $p[Code], @r}
+{code = [], stack = [!A], !A = nNum(N), $p[], @r}
   :- int(N)
      | result = N.
