@@ -1,6 +1,6 @@
 /*
    G-Machine on LMNtal
-   Mark 2
+   Mark 3
 */
 
 {
@@ -38,6 +38,7 @@ Program = [
  main = list snd fst
 */
 
+%/*
 Program = [
     ["list"               ] = (("pair", 1), "list"),
     ["pair", "x", "y", "f"] = (("f", "x"), "y"),
@@ -45,7 +46,7 @@ Program = [
     ["snd", "x", "y"      ] = "y",
     ["main"               ] = (("list", "snd"), "fst")
 ].
-
+%*/
 
 % Compiler
 
@@ -83,7 +84,8 @@ compileSC = [ [Name|Vs] = Body | SCs ]
   :- ground(Vs)
      | compileSC = SCs, 
        m(Name, !A), 
-       !A = nGlobal([ compileC(Body, Vs, 0),
+       !A = nGlobal(length(Vs), 
+		    [ compileC(Body, Vs, 0),
 		      update(length(Vs)), 
 		      pop(length(Vs)), 
 		      unwind
@@ -162,9 +164,12 @@ code = [mkap|Is], stack = [!A1, !A2|S]
 % Push the address of the local variable on the Nth element on the stack.
 % Put the stopper "pushing" on the head of the code when pushing.
 push @@
+% code = [push(N)|Is], stack = S
+%   :- Nplus1 = N + 1
+%      | code = [pushing|Is], stack = [lookupStack(Nplus1)|S].
+
 code = [push(N)|Is], stack = S
-  :- Nplus1 = N + 1
-     | code = [pushing|Is], stack = [lookupStack(Nplus1)|S].
+  :- code = [pushing|Is], stack = [lookupStack(N)|S].
 
 % Traverse the stack to accomplish the push of the Nth element on the stack.
 pushLookup @@
@@ -174,8 +179,8 @@ H = [lookupStack(N), A|T]
 
 % Push the Nth element on the stack and clear the stopper "pushing".
 pushResolve @@
-code = [pushing|Is], stack = S, H = [lookupStack(0), !A|T], !A = nApp(Al, !Ar)
-  :- code = Is, stack = [!Ar|S], H = [!A|T], !A = nApp(Al, !Ar).
+code = [pushing|Is], stack = S, H = [lookupStack(0), !A|T]
+  :- code = Is, stack = [!A|S], H = [!A|T].
 
 % Update the Nth element of the stack.
 update @@
@@ -192,8 +197,8 @@ H = updateStack(0, !A, [!Ai|S]), !Ai = nApp(!AL, !AR), code = [updating|Is]
   :- H = [!Ai|S], !Ai >< !A, code = Is.
 
 update0nGlobal @@ 
-H = updateStack(0, !A, [!Ai|S]), !Ai = nGlobal(Body), code = [updating|Is]
-  :- ground(Body)
+H = updateStack(0, !A, [!Ai|S]), !Ai = nGlobal(VN, Body), code = [updating|Is]
+  :- ground(Body), int(VN)
      | H = [!Ai|S], !Ai >< !A, code = Is.
 
 
@@ -222,9 +227,20 @@ code = [unwind], stack = [!A|S], !A = nNum(N)
 
 % Unwind the global node and pushes the codes to the code.
 unwindGlobal @@
-code = [unwind], stack = [!A0|S], !A0 = nGlobal(Cs)
-  :- ground(Cs)
-     | code = Cs, stack = [!A0|S], !A0 = nGlobal(Cs).
+code = [unwind], stack = [!A0|S], !A0 = nGlobal(VN, Cs)
+  :- ground(Cs), int(VN)
+     | code = rearranging(Cs), stack = rearrange(VN, !A0, S), !A0 = nGlobal(VN, Cs).
+
+rearrange @@
+    H = rearrange(VN, !Ai_1, [!A|T]), !A = nApp(AL, !AR) 
+    :- VN > 0, VN_1 = VN - 1 
+       | H = [!AR|rearrange(VN_1, !A, T)], !A = nApp(AL, !AR) .
+
+finishRearrange @@
+    code = rearranging(CS), H = rearrange(0, !An, T), 
+    :- code = CS, H = [!An|T].
+
+
 
 }.
 
