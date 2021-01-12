@@ -4,432 +4,432 @@
 */
 
 {
-% Some tests
+    % Some tests
 
-/*
-Program = [
-    ["id", "x"] = "x",
-    ["main"   ] = ("id", 3)
-].
-*/
+    /*
+    Program = [
+	["id", "x"] = "x",
+	["main"   ] = ("id", 3)
+    ].
+    */
 
-/*
-Program = [
-    ["k", "x", "y"     ] = "x",
-    ["s", "x", "y", "z"] = (("x", "z"), ("y", "z")),
-    ["id"              ] = (("s", "k"), "k"),
-    ["main"            ] = ("id", 3)
-].
-*/
+    /*
+    Program = [
+	["k", "x", "y"     ] = "x",
+	["s", "x", "y", "z"] = (("x", "z"), ("y", "z")),
+	["id"              ] = (("s", "k"), "k"),
+	["main"            ] = ("id", 3)
+    ].
+    */
 
-/*
-Program = [
-    ["twice", "f", "x"] = ("f", ("f", "x")),
-    ["id", "x"        ] = "x",
-    ["main"           ] = ((("twice", "twice"), "id"), 3)
-].
-*/
+    /*
+    Program = [
+	["twice", "f", "x"] = ("f", ("f", "x")),
+	["id", "x"        ] = "x",
+	["main"           ] = ((("twice", "twice"), "id"), 3)
+    ].
+    */
 
-/*
- pair x y f = f x y
- fst x y = x
- snd x y = y
- list = pair 1 list
- main = list snd fst
-*/
+    /*
+    pair x y f = f x y
+    fst x y = x
+    snd x y = y
+    list = pair 1 list
+    main = list snd fst
+    */
 
-/*
-Program = [
-    ["list"               ] = (("pair", 1), "list"),
-    ["pair", "x", "y", "f"] = (("f", "x"), "y"),
-    ["fst", "x", "y"      ] = "x",
-    ["snd", "x", "y"      ] = "y",
-    ["main"               ] = (("list", "snd"), "fst")
-].
-*/
+    /*
+    Program = [
+	["list"               ] = (("pair", 1), "list"),
+	["pair", "x", "y", "f"] = (("f", "x"), "y"),
+	["fst", "x", "y"      ] = "x",
+	["snd", "x", "y"      ] = "y",
+	["main"               ] = (("list", "snd"), "fst")
+    ].
+    */
 
-/*
-Program = [
+    /*
+    Program = [
 	["main"] = let(["x" = 1], "x")
-].
-*/
+    ].
+    */
 
-/*
-Program = [
+    /*
+    Program = [
 	["main"] = letrec(["x" = 1, "y" = "x"], "y")
-].
-*/
+    ].
+    */
 
-/*
-Program = [
+    /*
+    Program = [
 	["pair", "x", "y", "f"] = (("f", "x"), "y"),
 	["fst", "x", "y"      ] = "x",
 	["snd", "x", "y"      ] = "y",
 	["main"] = letrec(["list" = (("pair", 1), "list")], 
 			  ("list", "fst")
 	)
-].
-*/
+    ].
+    */
 
 
-%/*
-Program = [
-%	["list"               ] = (("pair", 1), "list"),
+    %/*
+    Program = [
 	["pair", "x", "y", "f"] = (("f", "x"), "y"),
 	["fst", "x", "y"      ] = "x",
 	["snd", "x", "y"      ] = "y",
-	% ["main"               ] = (("list", "snd"), "fst")
 	["main"] = letrec(["list" = (("pair", 1), "list")], 
 			  (("list", "snd"), "fst")
 	)
-].
-%*/
-
-
-% Compiler
-
-
-% Main functions for the compiling starts from here.
-compileSC(Program).
-
-% Compiles the super combinators.
-% This turns the super combinator expression to the global node
-% with the code (the compiled body of the super combinator) embedded in it
-% as "nGlobal(<the code>)".
-% The embedded code will be as
-% "[ <the codes obtained from the compileC below>
-%  , slide(<the number of the variable plus 1>)
-%  , unwind 
-%  ]".
-% Also, adds the "<name of the super combinator> -> <the address of the global node>"
-% binding "m(Name, Address)" to the global environment.
-compileSC @@
-compileSC = [ [Name|Vs] = Body | SCs ]
-  :- ground(Vs)
-     | compileSC = SCs, 
-       m(Name, !A), 
-       !A = nGlobal(length(Vs), 
-		    [ compileC(Body, zip(Vs, 0)),
-		      update(length(Vs)), 
-		      pop(length(Vs)), 
-		      unwind
-		    ]).
-
-{'$callback'(zerostep).
-% Some helper functions for the compiler.
-
-appendCons @@
-R = append([H|T], L)
-  :- R = [H | append(T, L)].
-
-appendNil @@
-R = append([], L)
-  :- R = L.
-
-% zip with an incresing number N 
-zipNCons @@
-R = zip([V|Vs], N) 
-  :- Nplus1 = N + 1
-     | R = [asc(V, N) | zip(Vs, Nplus1) ].
-
-zipNNil @@
-R = zip([], N) 
-  :- int(N)
-     | R = [].
-
-addNtoRightElemOfAscListCons @@
-R = addNtoRightElemOfAscList([asc(V, Vi) | T], N)
-  :- ViPlusN = Vi + N
-     | R = [asc(V, ViPlusN) | addNtoRightElemOfAscList(T, N)].
-
-addNtoRightElemOfAscListNil @@
-R = addNtoRightElemOfAscList([], N)
-  :- int(N)
-     | R = [].
-
-reverse @@ 
-R = reverse(List) 
-  :- R = revAppend(List, []).
-
-revAppendCons @@
-R = revAppend([H|T], Acc)
-  :- R = revAppend(T, [H|Acc]).
-
-revAppendNil @@
-R = revAppend([], Acc)
-  :- R = Acc.
-
-length_init @@
-R = length(L) 
-  :- R = length(L, 0).
-
-length_cons @@
-R = length([H|L], N)
-  :- Nplus1 = N + 1, ground(H)
-     | R = length(L, Nplus1).
-
-length_nil @@
-R = length([], N)
-  :- R = N.
-
-mapDefVarCons @@
-R = mapDefVar([Var = Def|T])
-  :- ground(Def) 
-     | R = [Var | mapDefVar(T)].
-
-mapDefVarNil @@
-R = mapDefVar([])
-  :- R = [].
-
-
-}.
-
-compiledSC @@ 
-compileSC = [] :- .
-
-% The "compileC" compiles the expression and turns it to the code.
-% compileC(<expression to compile>, <environment>, <de bruijn index (based index)>)
-
-% Looks up and the get the de bruijn index
-% (...based index considering the change of the length of the stack through pushes).
-compileLocalVar_lookup @@
-R = compileC(Var1, [asc(Var2, Vi) | Vs])
-  :- string(Var1), Var1 \== Var2, int(Vi)
-     | R = compileC(Var1, Vs).
-
-% If the variable is in the environment, the variable is a local variable and
-% it can be "pushed" with the de bruijn index (based index) from the stack.
-compileLocalVar_resolve @@
-R = compileC(Var1, [asc(Var2, Vi) | Vs])
-  :- string(Var1), Var1 == Var2, ground(Vs)
-     | R = push(Vi).
-
-% If the variable is NOT in the environment, the variable is a free variable and
-% it should be "pushed" from the global environment through "pushGlobal".
-compileFreeVar @@
-R = compileC(Var, [])
-  :- string(Var)
-     | R = pushGlobal(Var).
-
-% Application is compiled into the postfix-notated code
-% like "(E0, E1) -> [E1, E0, mkap]".
-% However, the de bruijn index (based index) on the E0 should be increased by 1
-% with the consideration of the increasement of the length of the stack.
-compileApp @@
-H = [ compileC((E0, E1), Env) | T ]
-  :- ground(Env)
-     | H = [ compileC(E1, Env), 
-	     compileC(E0, addNtoRightElemOfAscList(Env, 1)),
-	     mkap | T ].
-
-% If the expression is an integer, the code should be the "pushInt"
-compileInt @@
-R = compileC(Int, Env)
-  :- int(Int), ground(Env)
-     | R = pushInt(Int).
-
-
-% let
-compileLet @@
-H = [compileC(let(Defs, E), Env) | T ]
-  :- ground(Defs), ground(Env)
-     | H = [ compileLetDefs(Defs, Env), 
-	     compileC(E, 
-		      % new environmemt
-		      append(zip(reverse(mapDefVar(Defs)), 0), 
-			     addNtoRightElemOfAscList(Env, length(Defs)))
-	     ),
-	     slide(length(Defs)) | T ].
-
-
-compileLetDefsCons @@
-H = [compileLetDefs([Var = Def | Defs], Env) | T]
-  :- ground(Env), string(Var)
-     | H = [ compileC(Def, Env),
-	     compileLetDefs(Defs, addNtoRightElemOfAscList(Env, 1)) | T].
-
-compileLetDefsNil @@
-H = [compileLetDefs([], Env) | T]
-  :- ground(Env)
-     | H = T.
-
-
-% letrec
-compileLetRec @@
-H = [compileC(letrec(Defs, E), Env) | T ]
-  :- ground(Defs), ground(Env)
-     | H = [ alloc(length(Defs)),
-	     compileLetRecDefs(Defs, 
-			       % new environmemt
-			       append(zip(reverse(mapDefVar(Defs)), 0), 
-				      addNtoRightElemOfAscList(Env, length(Defs))),
-			       length(Defs)
-	     ), 
-	     compileC(E, 
-		      % new environmemt
-		      append(zip(reverse(mapDefVar(Defs)), 0), 
-			     addNtoRightElemOfAscList(Env, length(Defs)))
-	     ),
-	     slide(length(Defs)) | T ].
-
-
-compileLetRecDefsCons @@
-H = [compileLetRecDefs([Var = Def | Defs], Env, N) | T]
-  :- ground(Env), string(Var), N_1 = N - 1
-     | H = [ compileC(Def, Env), update(N_1),
-	     compileLetRecDefs(Defs, Env, N_1) | T].
-
-compileLetRecDefsNil @@
-H = [compileLetRecDefs([], Env, 0) | T]
-  :- ground(Env)
-     | H = T.
-
-
-% The initial code and the stack.
-% (The initial heap (global nodes) and global environment 
-% will be produced by compiling the expression (super combinators))
-code = [pushGlobal("main"), unwind].
-stack = [].
-
-
-
-% G-Machine
-
-% Looks up the global node and pushes the address to the top of the stack.
-pushGlobal @@
-code = [pushGlobal(F)|Is], stack = S, m(MF, !A)
-  :- F == MF
-     | code = Is, stack = [!A|S], m(MF, !A).
-
-% Makes the number node and pushes the address.
-pushInt @@
-code = [pushInt(N)|Is], stack = S
-  :- int(N)
-     | code = Is, stack = [!A|S], !A = nNum(N).
-
-% Make application node of the top 2 addresses on the stack.
-mkap @@
-code = [mkap|Is], stack = [!A1, !A2|S]
-  :- code = Is, stack = [!A|S], !A = nApp(!A1, !A2).
-
-% Push the address of the local variable on the Nth element on the stack.
-% Put the stopper "pushing" on the head of the code when pushing.
-push @@
-% code = [push(N)|Is], stack = S
-%   :- Nplus1 = N + 1
-%      | code = [pushing|Is], stack = [lookupStack(Nplus1)|S].
-
-code = [push(N)|Is], stack = S
-  :- code = [pushing|Is], stack = [lookupStack(N)|S].
-
-% Traverse the stack to accomplish the push of the Nth element on the stack.
-pushLookup @@
-H = [lookupStack(N), A|T]
-  :- N > 0, N_1 = N - 1
-     | H = [A, lookupStack(N_1)|T].
-
-% Push the Nth element on the stack and clear the stopper "pushing".
-pushResolve @@
-code = [pushing|Is], stack = S, H = [lookupStack(0), !A|T]
-  :- code = Is, stack = [!A|S], H = [!A|T].
-
-% Update the Nth element of the stack.
-update @@
-code = [update(N)|Is], stack = [!A|S]
-  :- code = [updating|Is], stack = updateStack(N, !A, S).
-
-updateN @@
-H = updateStack(N, A, [Ai|S])
-  :- N > 0, N_1 = N - 1
-     | H = [Ai|updateStack(N_1, A, S)].
-
-update0nApp @@ 
-H = updateStack(0, !A, [!Ai|S]), !Ai = nApp(!AL, !AR), code = [updating|Is]
-  :- H = [!Ai|S], !Ai >< !A, code = Is.
-
-update0nGlobal @@ 
-H = updateStack(0, !A, [!Ai|S]), !Ai = nGlobal(VN, Body), code = [updating|Is]
-  :- ground(Body), int(VN)
-     | H = [!Ai|S], !Ai >< !A, code = Is.
-
-update0nNull @@ 
-H = updateStack(0, !A, [!Null|S]), !Null = null, code = [updating|Is]
-  :- H = [!A|S], !Null >< !A, code = Is. 
-
-
-/*
-update0nInt @@ 
-H = updateStack(0, !A, [!Ai|S]), !Ai = nNum(Num), code = [updating|Is]
-  :- int(Num) 
-     | H = [!Ai|S], !Ai >< !A, code = Is.
-*/
-
-% clear the top N element of the stack.
-popN @@
-code = [pop(N)|Is], stack = [!A0|S]
-  :- N > 0, N_1 = N - 1
-     | code = [pop(N_1)|Is], stack = S.
-
-pop0 @@
-code = [pop(0)|Is]
-:- code = Is.
-
-
-% Unwind application node.
-unwindApp @@
-code = [unwind], stack = [!A|S], !A = nApp(!A1, !A2)
-  :- code = [unwind], stack = [!A1, !A|S], !A = nApp(!A1, !A2).
-
-% Unwind the number node.
-% This is the final operation.
-unwindInt @@
-code = [unwind], stack = [!A|S], !A = nNum(N)
-  :- int(N)
-     | code = [], stack = [!A|S], !A = nNum(N).
-
-% Unwind the global node and pushes the codes to the code.
-unwindGlobal @@
-code = [unwind], stack = [!A0|S], !A0 = nGlobal(VN, Cs)
-  :- ground(Cs), int(VN)
-     | code = rearranging(Cs), stack = rearrange(VN, !A0, S), !A0 = nGlobal(VN, Cs).
-
-rearrange @@
+    ].
+    %*/
+
+
+    % Compiler
+
+
+    % Main functions for the compiling starts from here.
+    compileSC(Program).
+
+    % Compiles the super combinators.
+    % This turns the super combinator expression to the global node
+    % with the code (the compiled body of the super combinator) embedded in it
+    % as "nGlobal(<the code>)".
+    % The embedded code will be as
+    % "[ <the codes obtained from the compileC below>
+    %  , slide(<the number of the variable plus 1>)
+    %  , unwind 
+    %  ]".
+    % Also, adds the 
+    % "<name of the super combinator> -> <the address of the global node>"
+    % binding "m(Name, Address)" to the global environment.
+    compileSC @@
+    compileSC = [ [Name|Vs] = Body | SCs ]
+    :- ground(Vs)
+       | compileSC = SCs, 
+	 m(Name, !A), 
+	 !A = nGlobal(length(Vs), 
+		      [ compileC(Body, zip(Vs, 0)),
+			update(length(Vs)), 
+			pop(length(Vs)), 
+			unwind
+		      ]).
+
+    {'$callback'(zerostep).
+	% Some helper functions for the compiler.
+
+	appendCons @@
+	R = append([H|T], L)
+	:- R = [H | append(T, L)].
+
+	appendNil @@
+	R = append([], L)
+	:- R = L.
+
+	% zip with an incresing number N 
+	zipNCons @@
+	R = zip([V|Vs], N) 
+	:- Nplus1 = N + 1
+	   | R = [asc(V, N) | zip(Vs, Nplus1) ].
+
+	zipNNil @@
+	R = zip([], N) 
+	:- int(N)
+	   | R = [].
+
+	addNtoRightElemOfAscListCons @@
+	R = addNtoRightElemOfAscList([asc(V, Vi) | T], N)
+	:- ViPlusN = Vi + N
+	   | R = [asc(V, ViPlusN) | addNtoRightElemOfAscList(T, N)].
+
+	addNtoRightElemOfAscListNil @@
+	R = addNtoRightElemOfAscList([], N)
+	:- int(N)
+	   | R = [].
+
+	reverse @@ 
+	R = reverse(List) 
+	:- R = revAppend(List, []).
+
+	revAppendCons @@
+	R = revAppend([H|T], Acc)
+	:- R = revAppend(T, [H|Acc]).
+
+	revAppendNil @@
+	R = revAppend([], Acc)
+	:- R = Acc.
+
+	length_init @@
+	R = length(L) 
+	:- R = length(L, 0).
+
+	length_cons @@
+	R = length([H|L], N)
+	:- Nplus1 = N + 1, ground(H)
+	   | R = length(L, Nplus1).
+
+	length_nil @@
+	R = length([], N)
+	:- R = N.
+
+	mapDefVarCons @@
+	R = mapDefVar([Var = Def|T])
+	:- ground(Def) 
+	   | R = [Var | mapDefVar(T)].
+
+	mapDefVarNil @@
+	R = mapDefVar([])
+	:- R = [].
+
+
+    }.
+
+    compiledSC @@ 
+    compileSC = [] :- .
+
+    % The "compileC" compiles the expression and turns it to the code.
+    % compileC(<expression to compile>, <environment>, <de bruijn index (based index)>)
+
+    % Looks up and the get the de bruijn index
+    % (... based index considering the change of the length of the stack
+    % through pushes).
+    compileLocalVar_lookup @@
+    R = compileC(Var1, [asc(Var2, Vi) | Vs])
+    :- string(Var1), Var1 \== Var2, int(Vi)
+       | R = compileC(Var1, Vs).
+
+    % If the variable is in the environment, the variable is a local variable and
+    % it can be "pushed" with the de bruijn index (based index) from the stack.
+    compileLocalVar_resolve @@
+    R = compileC(Var1, [asc(Var2, Vi) | Vs])
+    :- string(Var1), Var1 == Var2, ground(Vs)
+       | R = push(Vi).
+
+    % If the variable is NOT in the environment, the variable is a free variable and
+    % it should be "pushed" from the global environment through "pushGlobal".
+    compileFreeVar @@
+    R = compileC(Var, [])
+    :- string(Var)
+       | R = pushGlobal(Var).
+
+    % Application is compiled into the postfix-notated code
+    % like "(E0, E1) -> [E1, E0, mkap]".
+    % However, the de bruijn index (based index) on the E0 should be increased by 1
+    % with the consideration of the increasement of the length of the stack.
+    compileApp @@
+    H = [ compileC((E0, E1), Env) | T ]
+    :- ground(Env)
+       | H = [ compileC(E1, Env), 
+	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+	       mkap | T ].
+
+    % If the expression is an integer, the code should be the "pushInt"
+    compileInt @@
+    R = compileC(Int, Env)
+    :- int(Int), ground(Env)
+       | R = pushInt(Int).
+
+
+    % let
+    compileLet @@
+    H = [compileC(let(Defs, E), Env) | T ]
+    :- ground(Defs), ground(Env)
+       | H = [ compileLetDefs(Defs, Env), 
+	       compileC(E, 
+			% new environmemt
+			append(zip(reverse(mapDefVar(Defs)), 0), 
+			       addNtoRightElemOfAscList(Env, length(Defs)))
+	       ),
+	       slide(length(Defs)) | T ].
+
+
+    compileLetDefsCons @@
+    H = [compileLetDefs([Var = Def | Defs], Env) | T]
+    :- ground(Env), string(Var)
+       | H = [ compileC(Def, Env),
+	       compileLetDefs(Defs, addNtoRightElemOfAscList(Env, 1)) | T].
+
+    compileLetDefsNil @@
+    H = [compileLetDefs([], Env) | T]
+    :- ground(Env)
+       | H = T.
+
+
+    % letrec
+    compileLetRec @@
+    H = [compileC(letrec(Defs, E), Env) | T ]
+    :- ground(Defs), ground(Env)
+       | H = [ alloc(length(Defs)),
+	       compileLetRecDefs(Defs, 
+				 % new environmemt
+				 append(zip(reverse(mapDefVar(Defs)), 0), 
+					addNtoRightElemOfAscList(Env, length(Defs))),
+				 length(Defs)
+	       ), 
+	       compileC(E, 
+			% new environmemt
+			append(zip(reverse(mapDefVar(Defs)), 0), 
+			       addNtoRightElemOfAscList(Env, length(Defs)))
+	       ),
+	       slide(length(Defs)) | T ].
+
+
+    compileLetRecDefsCons @@
+    H = [compileLetRecDefs([Var = Def | Defs], Env, N) | T]
+    :- ground(Env), string(Var), N_1 = N - 1
+       | H = [ compileC(Def, Env), update(N_1),
+	       compileLetRecDefs(Defs, Env, N_1) | T].
+
+    compileLetRecDefsNil @@
+    H = [compileLetRecDefs([], Env, 0) | T]
+    :- ground(Env)
+       | H = T.
+
+
+    % The initial code and the stack.
+    % (The initial heap (global nodes) and global environment 
+    % will be produced by compiling the expression (super combinators))
+    code = [pushGlobal("main"), unwind].
+    stack = [].
+
+
+
+    % G-Machine
+
+    % Looks up the global node and pushes the address to the top of the stack.
+    pushGlobal @@
+    code = [pushGlobal(F)|Is], stack = S, m(MF, !A)
+    :- F == MF
+       | code = Is, stack = [!A|S], m(MF, !A).
+
+    % Makes the number node and pushes the address.
+    pushInt @@
+    code = [pushInt(N)|Is], stack = S
+    :- int(N)
+       | code = Is, stack = [!A|S], !A = nNum(N).
+
+    % Make application node of the top 2 addresses on the stack.
+    mkap @@
+    code = [mkap|Is], stack = [!A1, !A2|S]
+    :- code = Is, stack = [!A|S], !A = nApp(!A1, !A2).
+
+    % Push the address of the local variable on the Nth element on the stack.
+    % Put the stopper "pushing" on the head of the code when pushing.
+    code = [push(N)|Is], stack = S
+    :- code = [pushing|Is], stack = [lookupStack(N)|S].
+
+    % Traverse the stack to accomplish the push of the Nth element on the stack.
+    pushLookup @@
+    H = [lookupStack(N), A|T]
+    :- N > 0, N_1 = N - 1
+       | H = [A, lookupStack(N_1)|T].
+
+    % Push the Nth element on the stack and clear the stopper "pushing".
+    pushResolve @@
+    code = [pushing|Is], stack = S, H = [lookupStack(0), !A|T]
+    :- code = Is, stack = [!A|S], H = [!A|T].
+
+    % Update the Nth element of the stack.
+    update @@
+    code = [update(N)|Is], stack = [!A|S]
+    :- code = [updating|Is], stack = updateStack(N, !A, S).
+
+    updateN @@
+    H = updateStack(N, A, [Ai|S])
+    :- N > 0, N_1 = N - 1
+       | H = [Ai|updateStack(N_1, A, S)].
+
+    update0nApp @@ 
+    H = updateStack(0, !A, [!Ai|S]), !Ai = nApp(!AL, !AR), code = [updating|Is]
+    :- H = [!Ai|S], !Ai >< !A, code = Is.
+
+    update0nGlobal @@ 
+    H = updateStack(0, !A, [!Ai|S]), !Ai = nGlobal(VN, Body), code = [updating|Is]
+    :- ground(Body), int(VN)
+       | H = [!Ai|S], !Ai >< !A, code = Is.
+
+    % Update the indirection node pointing null.
+    % This is for the "let rec" (Mark 3).
+    update0nNull @@ 
+    H = updateStack(0, !A, [!Null|S]), !Null = null, code = [updating|Is]
+    :- H = [!A|S], !Null >< !A, code = Is. 
+
+
+    /*
+    update0nInt @@ 
+    H = updateStack(0, !A, [!Ai|S]), !Ai = nNum(Num), code = [updating|Is]
+    :- int(Num) 
+       | H = [!Ai|S], !Ai >< !A, code = Is.
+    */
+
+    % clear the top N element of the stack.
+    popN @@
+    code = [pop(N)|Is], stack = [!A0|S]
+    :- N > 0, N_1 = N - 1
+       | code = [pop(N_1)|Is], stack = S.
+
+    pop0 @@
+    code = [pop(0)|Is]
+    :- code = Is.
+
+
+    % Unwind application node.
+    unwindApp @@
+    code = [unwind], stack = [!A|S], !A = nApp(!A1, !A2)
+    :- code = [unwind], stack = [!A1, !A|S], !A = nApp(!A1, !A2).
+
+    % Unwind the number node.
+    % This is the final operation.
+    unwindInt @@
+    code = [unwind], stack = [!A|S], !A = nNum(N)
+    :- int(N)
+       | code = [], stack = [!A|S], !A = nNum(N).
+
+    % Unwind the global node and pushes the codes to the code.
+    unwindGlobal @@
+    code = [unwind], stack = [!A0|S], !A0 = nGlobal(VN, Cs)
+    :- ground(Cs), int(VN)
+       | code = rearranging(Cs), stack = rearrange(VN, !A0, S), !A0 = nGlobal(VN, Cs).
+
+
+    % Rearrange the pointers on the stack.
+    % Replace the pointer to the application node with the pointer to its right child. 
+    rearrange @@
     H = rearrange(VN, !Ai_1, [!A|T]), !A = nApp(AL, !AR) 
     :- VN > 0, VN_1 = VN - 1 
        | H = [!AR|rearrange(VN_1, !A, T)], !A = nApp(AL, !AR) .
 
-finishRearrange @@
+    finishRearrange @@
     code = rearranging(CS), H = rearrange(0, !An, T), 
     :- code = CS, H = [!An|T].
 
 
-% Slides the top of the stack N and discard the slided elements.
-slideN @@
-code = [slide(N)|Is]
-  :- int(N)
-     | code = [sliding(N)|Is].
+    % Slides the top of the stack N and discard the slided elements.
+    slideN @@
+    code = [slide(N)|Is]
+    :- int(N)
+       | code = [sliding(N)|Is].
 
-slideN @@
-code = [sliding(N)|Is], stack = [!A0, !A1|S]
-  :- N > 0, N_1 = N - 1
-     | code = [sliding(N_1)|Is], stack = [!A0|S].
+    slideN @@
+    code = [sliding(N)|Is], stack = [!A0, !A1|S]
+    :- N > 0, N_1 = N - 1
+       | code = [sliding(N_1)|Is], stack = [!A0|S].
 
-slide0 @@
-code = [sliding(0)|Is]
-  :- code = Is.
+    slide0 @@
+    code = [sliding(0)|Is]
+    :- code = Is.
 
-% Alloc 
-% Allocates N "null pointer"s.
-% These "null pointers" will be updated and replaces with a "real" addresses
-% (so there is no need for worrying for the null pointer traversing).
-allocN @@
-code = [alloc(N)|Is], stack = S
-  :- N > 0, N_1 = N - 1
-     | code = [alloc(N_1)|Is], stack = [!Null|S], !Null = null.
+    % Alloc 
+    % Allocates N "null pointer"s.
+    % These "null pointers" will be updated and replaces with a "real" addresses
+    % (so there is no need for worrying for the null pointer traversing).
+    allocN @@
+    code = [alloc(N)|Is], stack = S
+    :- N > 0, N_1 = N - 1
+       | code = [alloc(N_1)|Is], stack = [!Null|S], !Null = null.
 
-alloc0 @@
-code = [alloc(0)|Is], stack = S
-  :- code = Is, stack = S.
+    alloc0 @@
+    code = [alloc(0)|Is], stack = S
+    :- code = Is, stack = S.
 
 }.
 
