@@ -89,10 +89,24 @@
     ].
     */
 
+    /*
     Program = [
 	["main"] = ((("if", (("<", 1), 2)), (("add", 3), 4)), (("add", 5), 6))
     ].
+    */
 
+    /*
+    Program = [
+	["main"] = if(1 < 2, 3 + neg(4), 5 + 6)
+    ].
+    */
+
+    /*
+    Program = [
+	["fac", "n"] = if(1 < "n", ("n" * ("fac", "n" - 1)), 1),
+	["main"] = ("fac", 5)
+    ].
+    */
 
     % Compiler
 
@@ -117,12 +131,20 @@
     :- ground(Vs)
        | compileSC = SCs, 
 	 m(Name, !A), 
-	 !A = nGlobal(length(Vs), 
-		      [ compileC(Body, zip(Vs, 0)),
-			update(length(Vs)), 
-			pop(length(Vs)), 
-			unwind
-		      ]).
+	 !A = compileR(Body, zip(Vs, 0), length(Vs)).
+
+    compiledSC @@ 
+    compileSC = [] :- .
+    
+    compileR @@
+    R = compileR(Exp, Env, Arity)
+    :- int(Arity)
+       | R = nGlobal(Arity, 
+		     [ compileE(Exp, Env),
+		       update(Arity), 
+		       pop(Arity), 
+		       unwind
+		     ]).
 
     {'$callback'(zerostep).
 	% Some helper functions for the compiler.
@@ -193,8 +215,105 @@
 
     }.
 
-    compiledSC @@ 
-    compileSC = [] :- .
+    % The "compileE" compiles the expression and turns it to the code.
+    % compileE(<expression to compile>, <environment>, <de bruijn index (based index)>)
+
+    % If the expression is an integer, the code should be the "pushInt"
+    compileInt @@
+    R = compileE(Int, Env)
+    :- int(Int), ground(Env)
+       | R = pushInt(Int).
+
+    % let
+    compileLet @@
+    H = [compileE(let(Defs, E), Env) | T ]
+    :- ground(Defs), ground(Env)
+       | H = [ compileLetDefs(Defs, Env), 
+	       compileE(E, 
+			% new environmemt
+			append(zip(reverse(mapDefVar(Defs)), 0), 
+			       addNtoRightElemOfAscList(Env, length(Defs)))
+	       ),
+	       slide(length(Defs)) | T ].
+
+
+    % letrec
+    compileLetRec @@
+    H = [compileE(letrec(Defs, E), Env) | T ]
+    :- ground(Defs), ground(Env)
+       | H = [ alloc(length(Defs)),
+	       compileLetRecDefs(Defs, 
+				 % new environmemt
+				 append(zip(reverse(mapDefVar(Defs)), 0), 
+					addNtoRightElemOfAscList(Env, length(Defs))),
+				 length(Defs)
+	       ), 
+	       compileE(E, 
+			% new environmemt
+			append(zip(reverse(mapDefVar(Defs)), 0), 
+			       addNtoRightElemOfAscList(Env, length(Defs)))
+	       ),
+	       slide(length(Defs)) | T ].
+
+
+    % Compile primitive operators
+    compileAdd @@
+    H = [ compileE(E0 + E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+	       compileE(E0, addNtoRightElemOfAscList(Env, 1)),
+	       add | T ].
+
+    compileMul @@
+    H = [ compileE(E0 * E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+	       compileE(E0, addNtoRightElemOfAscList(Env, 1)),
+	       mul | T ].
+
+    compileSub @@
+    H = [ compileE(E0 - E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+	       compileE(E0, addNtoRightElemOfAscList(Env, 1)),
+	       sub | T ].
+
+    compileLessThan @@
+    H = [ compileE(E0 < E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+	       compileE(E0, ltNtoRightElemOfAscList(Env, 1)),
+	       lt | T ].
+
+    compileNegate @@
+    H = [ compileE(neg(E0), Env) | T ]
+    :- H = [ compileE(E0, Env), 
+	     neg | T ].
+
+    compileIf @@
+    H = [ compileE(if(E0, E1, E2), Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E0, Env), 
+	       cond([ compileE(E1, Env) ], [ compileE(E2, Env) ]) | T ].
+
+    % The default cases.
+    % (The default cases are handled with compileC).
+
+    compileVariable @@
+    H = [ compileE(Var, Env) | T]
+    :- string(Var)
+       | H = [ compileC(Var, Env), eval | T].
+
+    compileApp @@
+    H = [ compileE((E0, E1), Env) | T]
+    :- H = [ compileC((E0, E1), Env), eval | T].
+    
+
+
+
+
+
+
 
     % The "compileC" compiles the expression and turns it to the code.
     % compileC(<expression to compile>, <environment>, <de bruijn index (based index)>)
@@ -225,22 +344,43 @@
     % like "(E0, E1) -> [E1, E0, mkap]".
     % However, the de bruijn index (based index) on the E0 should be increased by 1
     % with the consideration of the increasement of the length of the stack.
-    compileApp @@
+    compileCApp @@
     H = [ compileC((E0, E1), Env) | T ]
     :- ground(Env)
        | H = [ compileC(E1, Env), 
 	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
 	       mkap | T ].
 
+    compileCAdd @@
+    H = [ compileC(E0 + E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileC(E1, Env), 
+	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+	       add | T ].
+
+    compileCSub @@
+    H = [ compileC(E0 - E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileC(E1, Env), 
+	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+	       sub | T ].
+
+    compileCMul @@
+    H = [ compileC(E0 * E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileC(E1, Env), 
+	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+	       mul | T ].
+
     % If the expression is an integer, the code should be the "pushInt"
-    compileInt @@
+    compileCInt @@
     R = compileC(Int, Env)
     :- int(Int), ground(Env)
        | R = pushInt(Int).
 
 
     % let
-    compileLet @@
+    compileCLet @@
     H = [compileC(let(Defs, E), Env) | T ]
     :- ground(Defs), ground(Env)
        | H = [ compileLetDefs(Defs, Env), 
@@ -265,7 +405,7 @@
 
 
     % letrec
-    compileLetRec @@
+    compileCLetRec @@
     H = [compileC(letrec(Defs, E), Env) | T ]
     :- ground(Defs), ground(Env)
        | H = [ alloc(length(Defs)),
@@ -293,6 +433,9 @@
     H = [compileLetRecDefs([], Env, 0) | T]
     :- ground(Env)
        | H = T.
+
+
+
 
 
     % The initial code and the stack.
@@ -409,10 +552,48 @@
        | code = I2, stack = [!A|S2], dump = D, !A = nNum(N).
 
     % Unwind the global node and pushes the codes to the code.
-    unwindGlobal @@
-    code = [unwind], stack = [!A0|S], !A0 = nGlobal(VN, Cs)
+    unwindGlobalWithEmptyDump @@
+    code = [unwind], stack = [!A0|S], dump = [], !A0 = nGlobal(VN, Cs)
     :- ground(Cs), int(VN)
-       | code = rearranging(Cs), stack = rearrange(VN, !A0, S), !A0 = nGlobal(VN, Cs).
+       | code = rearranging(Cs), 
+	 stack = rearrange(VN, !A0, S),
+	 dump = [],
+	 !A0 = nGlobal(VN, Cs).
+
+    % Unwind the global node and pushes the codes to the code.
+    % (3.29)
+    unwindGlobalWithNonEmptyDump @@
+    code = [unwind], stack = [!A0|S], dump = [asc(I2, S2)|D], !A0 = nGlobal(VN, Cs)
+    :- ground(S), int(VN)
+       | code = unwindingGlobal(length(S), VN),
+	 stack = [!A0|S],
+	 dump = [asc(I2, S2)|D],
+	 !A0 = nGlobal(VN, Cs).
+
+    % (3.29)
+    unwindGlobalWithNonEmptyDumpKLessThanN @@
+    code = unwindingGlobal(K, N), dump = [asc(I2, S2)|D]
+    :- K < N
+       | code = unwindingGlobalsVariables(I2, S2), 
+	 dump = D.
+
+    unwindingGlobalsVariabes @@
+    code = unwindingGlobalsVariables(I2, S2), stack = [!A0, !A1|S]
+    :- code = unwindingGlobalsVariables(I2, S2), stack = [!A0|S].
+
+    unwindingGlobalsVariabesFinish @@
+    code = unwindingGlobalsVariables(I2, S2), stack = [!A0]
+    :- code = I2, stack = [!A0|S2].
+
+
+    % (3.29)
+    unwindGlobalWithNonEmptyDumpKGreaterThanN @@
+    code = unwindingGlobal(K, N), stack = [!A0|S], !A0 = nGlobal(VN, Cs)
+    :- K >= N, ground(Cs), int(VN)
+       | code = rearranging(Cs), 
+	 stack = rearrange(VN, !A0, S),
+	 !A0 = nGlobal(VN, Cs).
+
 
 
     % Rearrange the pointers on the stack.
@@ -435,6 +616,16 @@
     add @@
     code = [add|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
     :- N = N0 + N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
+
+    sub @@
+    code = [sub|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N = N0 - N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
+
+    mul @@
+    code = [mul|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N = N0 * N1
        | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
 
     neg @@
