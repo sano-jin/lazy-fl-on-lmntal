@@ -1,6 +1,6 @@
 /*
    G-Machine on LMNtal
-   Mark 4
+   Mark 5
 */
 
 {
@@ -101,12 +101,10 @@
     ].
     */
 
-    /*
     Program = [
 	["fac", "n"] = if(1 < "n", ("n" * ("fac", "n" - 1)), 1),
 	["main"] = ("fac", 5)
     ].
-    */
 
     % Compiler
 
