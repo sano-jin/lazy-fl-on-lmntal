@@ -1,0 +1,190 @@
+% Testing module
+
+
+
+{ test.
+
+    % Some tests
+
+    /*
+    Program = [
+	["id", "x"] = "x",
+	["main"   ] = ("id", 3)
+    ].
+    */
+
+    /*
+    Program = [
+	["k", "x", "y"     ] = "x",
+	["s", "x", "y", "z"] = (("x", "z"), ("y", "z")),
+	["id"              ] = (("s", "k"), "k"),
+	["main"            ] = ("id", 3)
+    ].
+    */
+
+    /*
+    Program = [
+	["twice", "f", "x"] = ("f", ("f", "x")),
+	["id", "x"        ] = "x",
+	["main"           ] = ((("twice", "twice"), "id"), 3)
+    ].
+    */
+
+    /*
+    pair x y f = f x y
+    fst x y = x
+    snd x y = y
+    list = pair 1 list
+    main = list snd fst
+    */
+
+    /*
+    Program = [
+	["list"               ] = (("pair", 1), "list"),
+	["pair", "x", "y", "f"] = (("f", "x"), "y"),
+	["fst", "x", "y"      ] = "x",
+	["snd", "x", "y"      ] = "y",
+	["main"               ] = (("list", "snd"), "fst")
+    ].
+    */
+
+    /*
+    Program = [
+	["main"] = let(["x" = 1], "x")
+    ].
+    */
+
+    /*
+    Program = [
+	["main"] = letrec(["x" = 1, "y" = "x"], "y")
+    ].
+    */
+
+    /*
+    Program = [
+	["pair", "x", "y", "f"] = (("f", "x"), "y"),
+	["fst", "x", "y"      ] = "x",
+	["snd", "x", "y"      ] = "y",
+	["main"] = letrec(["list" = (("pair", 1), "list")], 
+			  ("list", "fst")
+	)
+    ].
+    */
+
+
+    /*
+    Program = [
+	["pair", "x", "y", "f"] = (("f", "x"), "y"),
+	["fst", "x", "y"      ] = "x",
+	["snd", "x", "y"      ] = "y",
+	["main"] = letrec(["list" = (("pair", 1), "list")], 
+			  (("list", "snd"), "fst")
+	)
+    ].
+    */
+
+    /*
+    Program = [
+	["main"] = (("add", (("add", 1), 2)), 3)
+    ].
+    */
+
+    /*
+    Program = [
+	["main"] = ((("if", (("<", 1), 2)), (("add", 3), 4)), (("add", 5), 6))
+    ].
+    */
+
+    /*
+    Program = [
+	["main"] = if(1 < 2, 3 + neg(4), 5 + 6)
+    ].
+    */
+
+    /*
+    Program = [
+	["fac", "n"] = if(1 < "n", ("n" * ("fac", "n" - 1)), 1),
+	["main"] = ("fac", 5)
+    ].
+    */
+
+
+    Program = [
+	["downfrom", "n"] = if( 0 < "n", 
+				((eConstr(2, 2), "n"), ("downfrom", "n" - 1)), 
+				eConstr(1, 0)
+	),
+	["main"] = ("downfrom", 4)
+    ].
+
+
+    compileSC(Program).
+
+
+    % The initial code and the stack.
+% (The initial heap (global nodes) and global environment 
+% will be produced by compiling the expression (super combinators))
+    code = [pushGlobal("main"), unwind].
+    stack = [].
+    dump = [].
+    output = outputTail.
+
+    % Predifined primitives
+    primitives @@
+    :- uniq |
+	m("add", !Add), 
+    !Add = nGlobal(2, [push(1), eval, push(1), eval, add, update(2), pop(2), unwind]),
+    m("negate", !Neg), 
+    !Neg = nGlobal(1, [push(0), eval, neg, update(1), pop(1), unwind]),
+    m("<", !LT), 
+    !LT = nGlobal(2, [push(1), eval, push(1), eval, lt, update(2), pop(2), unwind]),
+    m("if", !IF), 
+    !IF = nGlobal(3, 
+		  [push(0), eval, cond([push(1)], [push(2)]), update(3), pop(3), unwind]
+    ),
+    m("length", !Length), 
+    !Length = nGlobal(1, 
+		      [ push(0), eval,
+			casejump([ asc(1, [ pushInt(0) ]),
+				   asc(2, [ split(2), push(1), pushGlobal("length"),
+					    mkap, eval, pushInt(1), add, slide(2) ]
+				   ) ]),
+			update(1),
+			pop(1),
+			unwind ]).
+
+}.
+
+
+compile @@
+{module(compiler). @rCompiler}, {test. $p. @rTest}
+  :- {compiling. @rCompiler. $p. @rTest}.
+
+
+exec @@
+{module(gm). @rGM}, {compiling. @rCompiler. $p}/
+  :- {@rGM. $p}.
+
+
+
+% The simple garbage collector after the final step.
+final @@
+{code = [], stack = [!A], !A = nNum(N), $p[], @r}
+  :- int(N)
+     | result = N.
+
+% Terminates if the dump is empty.
+terminateWithNum @@
+{code = [unwind], stack = [!A], !A = nNum(N), dump = [], $p[], @r}
+  :- int(N)
+     | result = N.
+
+
+% Terminates if the dump is empty.
+terminateWithConstr @@
+{code = [unwind], stack = [!A], !A = nConstr(Tag, Args), dump = [], $p[], @r}
+  :- ground(Args), int(Tag)
+     | result = nConstr(Tag, Args).
+
+
+

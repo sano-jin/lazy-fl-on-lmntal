@@ -315,19 +315,21 @@
     :- H = [ compileC((E0, E1), Env), eval | T].
     
 
+    compileEApp @@
+    H = [ compileE((E0, E1), Env) | T]
+    :- H = [ compileC((E0, E1), Env), eval | T].
+
+    
+
     % Mark 6
     compileECase @@
     H = [ compileE(case(E, Alts), Env) | T ]
     :- ground(Env)
-       | H = [ compileE(E, Env), casejump(compileD(Alts, Env) | T ].
-
-    compileEPack @@
-	H = [ compileE(pack(Tag, Arity), E, Alts), Env) | T ]
-    :- ground(Env)
-       | H = [ compileE(E, Env), casejump(compileD(Alts, Env) | T ].
+       | H = [ compileE(E, Env), casejump(compileD(Alts, Env)) | T ].
 
 
 
+	
 
     % The "compileC" compiles the expression and turns it to the code.
     % compileC(<expression to compile>, <environment>, <de bruijn index (based index)>)
@@ -622,10 +624,11 @@
 
     % Unwind the constructor node
     % Mark 6
-    unwindGlobalWithNonEmptyDump @@
+    unwindNConstr @@
     code = [unwind], stack = [!A|S], dump = [asc(I2, S2)|D], !A = nConstr(Tag, Args)
     :- ground(S)
        | code = I2, stack = [!A|S2], dump = D, !A = nConstr(Tag, Args).
+
 
     % Rearrange the pointers on the stack.
     % Replace the pointer to the application node with the pointer to its right child. 

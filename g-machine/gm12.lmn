@@ -1,0 +1,348 @@
+/*
+   G-Machine on LMNtal
+   Mark 6
+*/
+
+{ module(gm). 
+    
+    {'$callback'(zerostep).
+	% Some helper functions for the compiler.
+
+	appendCons @@
+	R = append([H|T], L)
+	:- R = [H | append(T, L)].
+
+	appendNil @@
+	R = append([], L)
+	:- R = L.
+
+	revAppendCons @@
+	R = revAppend([H|T], Acc)
+	:- R = revAppend(T, [H|Acc]).
+
+	revAppendNil @@
+	R = revAppend([], Acc)
+	:- R = Acc.
+
+	reverse @@ 
+	R = reverse(List) 
+	:- R = revAppend(List, []).
+
+	length_init @@
+	R = length(L) 
+	:- R = length(L, 0).
+
+	length_cons @@
+	R = length([H|L], N)
+	:- Nplus1 = N + 1, ground(H)
+	   | R = length(L, Nplus1).
+
+	length_nil @@
+	R = length([], N)
+	:- R = N.
+
+
+    }.
+
+
+    % G-Machine
+
+    % Looks up the global node and pushes the address to the top of the stack.
+    pushGlobal @@
+    code = [pushGlobal(F)|Is], stack = S, m(MF, !A)
+    :- F == MF
+       | code = Is, stack = [!A|S], m(MF, !A).
+
+    % Makes the number node and pushes the address.
+    pushInt @@
+    code = [pushInt(N)|Is], stack = S
+    :- int(N)
+       | code = Is, stack = [!A|S], !A = nNum(N).
+
+    % Make application node of the top 2 addresses on the stack.
+    mkap @@
+    code = [mkap|Is], stack = [!A1, !A2|S]
+    :- code = Is, stack = [!A|S], !A = nApp(!A1, !A2).
+
+    % Push the address of the local variable on the Nth element on the stack.
+    % Put the stopper "pushing" on the head of the code when pushing.
+    code = [push(N)|Is], stack = S
+    :- code = [pushing|Is], stack = [lookupStack(N)|S].
+
+    % Traverse the stack to accomplish the push of the Nth element on the stack.
+    pushLookup @@
+    H = [lookupStack(N), A|T]
+    :- N > 0, N_1 = N - 1
+       | H = [A, lookupStack(N_1)|T].
+
+    % Push the Nth element on the stack and clear the stopper "pushing".
+    pushResolve @@
+    code = [pushing|Is], stack = S, H = [lookupStack(0), !A|T]
+    :- code = Is, stack = [!A|S], H = [!A|T].
+
+    % Update the Nth element of the stack.
+    update @@
+    code = [update(N)|Is], stack = [!A|S]
+    :- code = [updating|Is], stack = updateStack(N, !A, S).
+
+    updateN @@
+    H = updateStack(N, A, [Ai|S])
+    :- N > 0, N_1 = N - 1
+       | H = [Ai|updateStack(N_1, A, S)].
+
+    update0nApp @@ 
+    H = updateStack(0, !A, [!Ai|S]), !Ai = nApp(!AL, !AR), code = [updating|Is]
+    :- H = [!Ai|S], !Ai >< !A, code = Is.
+
+    update0nGlobal @@ 
+    H = updateStack(0, !A, [!Ai|S]), !Ai = nGlobal(VN, Body), code = [updating|Is]
+    :- ground(Body), int(VN)
+       | H = [!Ai|S], !Ai >< !A, code = Is.
+
+    % Update the indirection node pointing null.
+    % This is for the "let rec" (Mark 3).
+    update0nNull @@ 
+    H = updateStack(0, !A, [!Null|S]), !Null = null, code = [updating|Is]
+    :- H = [!A|S], !Null >< !A, code = Is. 
+
+
+    /*
+    update0nInt @@ 
+    H = updateStack(0, !A, [!Ai|S]), !Ai = nNum(Num), code = [updating|Is]
+    :- int(Num) 
+       | H = [!Ai|S], !Ai >< !A, code = Is.
+    */
+
+    % clear the top N element of the stack.
+    popN @@
+    code = [pop(N)|Is], stack = [!A0|S]
+    :- N > 0, N_1 = N - 1
+       | code = [pop(N_1)|Is], stack = S.
+
+    pop0 @@
+    code = [pop(0)|Is]
+    :- code = Is.
+
+
+    % Unwind application node.
+    unwindApp @@
+    code = [unwind], stack = [!A|S], !A = nApp(!A1, !A2)
+    :- code = [unwind], stack = [!A1, !A|S], !A = nApp(!A1, !A2).
+
+    % Unwind the number node.
+    % This is the final operation.
+    unwindInt @@
+    code = [unwind], stack = [!A|S], dump = [asc(I2, S2)|D], !A = nNum(N)
+    :- int(N), ground(S)
+       | code = I2, stack = [!A|S2], dump = D, !A = nNum(N).
+
+    % Unwind the global node and pushes the codes to the code.
+    unwindGlobalWithEmptyDump @@
+    code = [unwind], stack = [!A0|S], dump = [], !A0 = nGlobal(VN, Cs)
+    :- ground(Cs), int(VN)
+       | code = rearranging(Cs), 
+	 stack = rearrange(VN, !A0, S),
+	 dump = [],
+	 !A0 = nGlobal(VN, Cs).
+
+    % Unwind the global node and pushes the codes to the code.
+    % (3.29)
+    unwindGlobalWithNonEmptyDump @@
+    code = [unwind], stack = [!A0|S], dump = [asc(I2, S2)|D], !A0 = nGlobal(VN, Cs)
+    :- ground(S), int(VN)
+       | code = unwindingGlobal(length(S), VN),
+	 stack = [!A0|S],
+	 dump = [asc(I2, S2)|D],
+	 !A0 = nGlobal(VN, Cs).
+
+    % (3.29)
+    unwindGlobalWithNonEmptyDumpKLessThanN @@
+    code = unwindingGlobal(K, N), dump = [asc(I2, S2)|D]
+    :- K < N
+       | code = unwindingGlobalsVariables(I2, S2), 
+	 dump = D.
+
+    unwindingGlobalsVariabes @@
+    code = unwindingGlobalsVariables(I2, S2), stack = [!A0, !A1|S]
+    :- code = unwindingGlobalsVariables(I2, S2), stack = [!A0|S].
+
+    unwindingGlobalsVariabesFinish @@
+    code = unwindingGlobalsVariables(I2, S2), stack = [!A0]
+    :- code = I2, stack = [!A0|S2].
+
+
+    % (3.29)
+    unwindGlobalWithNonEmptyDumpKGreaterThanN @@
+    code = unwindingGlobal(K, N), stack = [!A0|S], !A0 = nGlobal(VN, Cs)
+    :- K >= N, ground(Cs), int(VN)
+       | code = rearranging(Cs), 
+	 stack = rearrange(VN, !A0, S),
+	 !A0 = nGlobal(VN, Cs).
+
+    % Unwind the constructor node
+    % Mark 6
+    unwindNConstrWithNonEmptyDump @@
+    code = [unwind], stack = [!A|S], dump = [asc(I2, S2)|D], !A = nConstr(Tag, Args)
+    :- ground(S)
+       | code = I2, stack = [!A|S2], dump = D, !A = nConstr(Tag, Args).
+
+
+
+    % Rearrange the pointers on the stack.
+    % Replace the pointer to the application node with the pointer to its right child. 
+    rearrange @@
+    H = rearrange(VN, !Ai_1, [!A|T]), !A = nApp(AL, !AR) 
+    :- VN > 0, VN_1 = VN - 1 
+       | H = [!AR|rearrange(VN_1, !A, T)], !A = nApp(AL, !AR) .
+
+    finishRearrange @@
+    code = rearranging(CS), H = rearrange(0, !An, T), 
+    :- code = CS, H = [!An|T].
+
+    % Evaluate the arguments of the primitive operators
+    eval @@
+    code = [eval|Is], stack = [A|S], dump = D
+    :- code = [unwind], stack = [A], dump = [asc(Is, S)|D].
+
+    % Arithmetic instructions
+    add @@
+    code = [add|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N = N0 + N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
+
+    sub @@
+    code = [sub|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N = N0 - N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
+
+    mul @@
+    code = [mul|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N = N0 * N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
+
+    neg @@
+    code = [neg|Is], stack = [!A0|S], !A0 = nNum(N0)
+    :- N = - N0
+       | code = Is, stack = [!A|S], !A= nNum(N), !A0 = nNum(N0).
+
+    % Comparison instructions
+    lessThanTrue @@
+    code = [lt|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N0 < N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(1).
+
+    lessThanFalse @@
+    code = [lt|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N0 >= N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(0).
+
+
+    % Condition instruction
+    condTrue @@
+    code = [cond(I1, I2)|Is], stack = [!A|S], !A= nNum(1)
+    :- ground(I2)
+       | code = append(I1, Is), stack = S, !A = nNum(1).
+
+    condFalse @@
+    code = [cond(I1, I2)|Is], stack = [!A|S], !A= nNum(0)
+    :- ground(I1)
+       | code = append(I2, Is), stack = S, !A = nNum(0).
+
+
+    % Slides the top of the stack N and discard the slided elements.
+    slide @@
+    code = [slide(N)|Is]
+    :- int(N)
+       | code = [sliding(N)|Is].
+
+    slideN @@
+    code = [sliding(N)|Is], stack = [!A0, !A1|S]
+    :- N > 0, N_1 = N - 1
+       | code = [sliding(N_1)|Is], stack = [!A0|S].
+
+    slide0 @@
+    code = [sliding(0)|Is]
+    :- code = Is.
+
+    % Alloc 
+    % Allocates N "null pointer"s.
+    % These "null pointers" will be updated and replaces with a "real" addresses
+    % (so there is no need for worrying for the null pointer traversing).
+    allocN @@
+    code = [alloc(N)|Is], stack = S
+    :- N > 0, N_1 = N - 1
+       | code = [alloc(N_1)|Is], stack = [!Null|S], !Null = null.
+
+    alloc0 @@
+    code = [alloc(0)|Is], stack = S
+    :- code = Is, stack = S.
+
+
+    % Mark 6
+    % Implementation of data types
+
+    % Pack constructor with the arguments
+    pack @@
+    code = [pack(Tag, Arity) | Is]
+    :- code = [packing(Tag, Arity, []) | Is].
+
+    packN @@
+    R = packing(Tag, Arity, Args), stack = [A|S]
+    :- Arity > 0, Arity_1 = Arity - 1
+       | R = packing(Tag, Arity_1, [A|Args]), stack = S.
+
+    pack0 @@
+    code = [packing(Tag, 0, Args) | Is], stack = S
+    :- code = Is, stack = [!A|S], !A = nConstr(Tag, reverse(Args)).
+
+
+    % Casejump 
+    % A jump instructions for the case expression
+    casejumpLookup @@
+    code = [casejump([asc(Tag1, I2) | Cases]) | Is], 
+    stack = [!A|S], 
+    !A = nConstr(Tag2, SS)
+    :- Tag1 =\= Tag2, ground(I2)
+       | code = [casejump(Cases) | Is], 
+	 stack = [!A|S], 
+	 !A = nConstr(Tag2, SS).
+
+    casejumpResolve @@
+    code = [casejump([asc(Tag1, I2) | Cases]) | Is], 
+    stack = [!A|S], 
+    !A = nConstr(Tag2, SS)
+    :- Tag1 =:= Tag2, ground(Cases)
+       | code = append(I2, Is), 
+	 stack = [!A|S], 
+	 !A = nConstr(Tag2, SS).
+
+    % Split
+    code = [split(N) | Is], stack = [!A|S], !A = nConstr(Tag, Args)
+    :- ground(Args), int(N) % There may be no need for the N
+       | code = Is,
+	 stack = append(Args, S), 
+	 !A = nConstr(Tag, Args).
+
+    % Print the output
+    outputNNum @@
+    Out = outputTail, code = [print|Is], stack = [!A|S], !A = nNum(N)
+    :- int(N)
+       | Out = [N|outputTail], code = Is, stack = [!A|S], !A = nNum(N).
+
+    outputNConstr @@
+    code = [print|Is], stack = [!A|S], !A = nConstr(Tag, Args)
+    :- int(Tag), ground(Args)
+       | code = consEvalPrint(Tag, Is), 
+	 stack = append(Args, S), !A = nConstr(Tag, Args).
+
+    outputNConstrN @@
+    code = consEvalPrint(Tag, Is)
+    :- Tag > 0, Tag_1 = Tag - 1
+       | code = consEvalPrint(Tag_1, [eval, print | Is]).
+
+    outputNConstr0 @@
+    code = consEvalPrint(0, Is)
+    :- code = Is.
+
+
+}.
