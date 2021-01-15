@@ -211,10 +211,10 @@
     :- H = [ compileC(eConstr(Tag, Arity), Env),
 	     eval | T].
 
-    % Print ()
-    compileEPrint @@
-    H = [ compileE(print(E), Env) | T]
-    :- H = [ compileC(print(E), Env), eval | T].
+%     % Print. Not working correctly
+%     compileEPrint @@
+%     H = [ compileE(print(E), Env) | T]
+%     :- H = [ compileC(print(E), Env), eval | T].
 
 
     
@@ -338,11 +338,13 @@
 
 
     % Mark 6
-    compileCPrint @@
-    H = [ compileC(print(E), Env) | T ]
-    :- H = [ compileC(E, Env), 
- 	     print | T ].
-    
+
+%     % Print. Not working correctly
+%     compileCPrint @@
+%     H = [ compileC(print(E), Env) | T ]
+%     :- H = [ compileC(E, Env), 
+%  	     print | T ].
+%     
 
 
 
