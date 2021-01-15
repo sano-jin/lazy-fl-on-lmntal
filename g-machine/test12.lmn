@@ -197,38 +197,22 @@
     output = outputTail.
 
 
-    % Garbage collection (based on reference counting)
-    gcNApp @@
-    !A = nApp(!E1, !E2) 
-    :- num(!A) =:= 1
-       | .
-    
-    gcNNum @@
-    !A = nNum(N) 
-    :- num(!A) =:= 1, int(N)
-       | .
-    
-    gcNConstr @@
-    !A = nConstr(Tag, Args) 
-    :- num(!A) =:= 1, int(Tag), ground(Args)
-       | .
-    
-
-
-    % Predifined primitives
-    primitives @@
-    :- uniq |
- 	m("add", !Add), 
-    !Add = nGlobal(2, [push(1), eval, push(1), eval, add, update(2), pop(2), unwind]),
-    m("negate", !Neg), 
-    !Neg = nGlobal(1, [push(0), eval, neg, update(1), pop(1), unwind]),
-    m("<", !LT), 
-    !LT = nGlobal(2, [push(1), eval, push(1), eval, lt, update(2), pop(2), unwind]),
-    m("if", !IF), 
-    !IF = nGlobal(3, 
- 		  [ push(0), eval, cond([push(1)], [push(2)]), 
- 		    update(3), pop(3), unwind]
-    ).
+    %  % Predifined primitives
+    %  primitives @@
+    %  :- uniq |
+    %  	m("add", !Add), 
+    %  !Add = nGlobal(2,
+    %                 [push(1), eval, push(1), eval, add, update(2), pop(2), unwind]
+    %  ),
+    %  m("negate", !Neg), 
+    %  !Neg = nGlobal(1, [push(0), eval, neg, update(1), pop(1), unwind]),
+    %  m("<", !LT), 
+    %  !LT = nGlobal(2, [push(1), eval, push(1), eval, lt, update(2), pop(2), unwind]),
+    %  m("if", !IF), 
+    %  !IF = nGlobal(3, 
+    %  		  [ push(0), eval, cond([push(1)], [push(2)]), 
+    %  		    update(3), pop(3), unwind]
+    %  ).
     %  m("length", !Length), 
     %  !Length = nGlobal(1, 
     %	      [ push(0), eval,
@@ -250,7 +234,26 @@ compile @@
 
 exec @@
 {module(gm). @rGM}, {compiling. @rCompiler. $p}/
-  :- {@rGM. $p}.
+  :- { 
+    
+    % Garbage collection (based on reference counting)
+    gcNApp @@
+    !A = nApp(!E1, !E2) 
+    :- num(!A) =:= 1
+       | .
+    
+    gcNNum @@
+    !A = nNum(N) 
+    :- num(!A) =:= 1, int(N)
+       | .
+    
+    gcNConstr @@
+    !A = nConstr(Tag, Args) 
+    :- num(!A) =:= 1, int(Tag), ground(Args)
+       | .
+
+    @rGM. $p.
+}.
 
 
 
