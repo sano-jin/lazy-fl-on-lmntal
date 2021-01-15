@@ -148,7 +148,7 @@
     ].
     */
 
-
+    /*
     Program = [
  	["list", "n"] = ((eConstr(2, 2), "n"), ("list", "n" + 1)), 
  	["timesN", "list", "n"] = if( 0 < "n",
@@ -162,6 +162,28 @@
 	),
  	["main"] = (("timesN", ("list", 1)), 5)
     ].
+    */
+
+    Program = [
+ 	["list", "n"] = ((eConstr(2, 2), "n"), ("list", "n" + 1)), 
+ 	["take", "list", "n"] = if( 0 < "n",
+				    case( "list", 
+ 					  [ alt(1, [], eConstr(1, 0)), % nil
+ 					    alt(2, ["h", "t"], % cons
+						((eConstr(2, 2), "h"), 
+						 (("take", "t"), "n" - 1)) 
+					       ) ]
+ 				       ),
+				       eConstr(1, 0)
+	),
+ 	["times", "list"] = case( "list", 
+ 				  [ alt(1, [], 1), % nil
+ 				    alt(2, ["h", "t"], % cons
+					"h" * ("times", "t")
+				    ) ]
+ 	),
+ 	["main"] = ("times", (("take", ("list", 1)), 5))
+    ].
 
 
     compileSC(Program).
@@ -173,7 +195,26 @@
     stack = [].
     dump = [].
     output = outputTail.
+
+
+    % Garbage collection (based on reference counting)
+    gcNApp @@
+    !A = nApp(!E1, !E2) 
+    :- num(!A) =:= 1
+       | .
     
+    gcNNum @@
+    !A = nNum(N) 
+    :- num(!A) =:= 1, int(N)
+       | .
+    
+    gcNConstr @@
+    !A = nConstr(Tag, Args) 
+    :- num(!A) =:= 1, int(Tag), ground(Args)
+       | .
+    
+
+
     % Predifined primitives
     primitives @@
     :- uniq |
