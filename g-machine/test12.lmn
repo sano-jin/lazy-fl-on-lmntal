@@ -108,7 +108,7 @@
     ].
     */
 
-
+    /*
     Program = [
 	["downfrom", "n"] = if( 0 < "n", 
 				((eConstr(2, 2), "n"), ("downfrom", "n" - 1)), 
@@ -116,10 +116,23 @@
 	),
 	["main"] = ("downfrom", 4)
     ].
+    */
+
+
+    Program = [
+	["downfrom", "n"] = if( 0 < "n", 
+				((eConstr(2, 2), "n"), ("downfrom", "n" - 1)), 
+				eConstr(1, 0)
+	),
+	["length", "list"] = case( "list", 
+				   [ alt(1, [], 0), % nil
+				     alt(2, ["h", "t"], 1 + ("length", "t")) ] % cons
+	),
+	["main"] = ("length", ("downfrom", 4))
+    ].
 
 
     compileSC(Program).
-
 
     % The initial code and the stack.
 % (The initial heap (global nodes) and global environment 
@@ -140,18 +153,19 @@
     !LT = nGlobal(2, [push(1), eval, push(1), eval, lt, update(2), pop(2), unwind]),
     m("if", !IF), 
     !IF = nGlobal(3, 
-		  [push(0), eval, cond([push(1)], [push(2)]), update(3), pop(3), unwind]
-    ),
-    m("length", !Length), 
-    !Length = nGlobal(1, 
-		      [ push(0), eval,
-			casejump([ asc(1, [ pushInt(0) ]),
-				   asc(2, [ split(2), push(1), pushGlobal("length"),
-					    mkap, eval, pushInt(1), add, slide(2) ]
-				   ) ]),
-			update(1),
-			pop(1),
-			unwind ]).
+		  [ push(0), eval, cond([push(1)], [push(2)]), 
+		    update(3), pop(3), unwind]
+    ).
+%     m("length", !Length), 
+%     !Length = nGlobal(1, 
+% 		      [ push(0), eval,
+% 			casejump([ asc(1, [ pushInt(0) ]),
+% 				   asc(2, [ split(2), push(1), pushGlobal("length"),
+% 					    mkap, eval, pushInt(1), add, slide(2) ]
+% 				   ) ]),
+% 			update(1),
+% 			pop(1),
+% 			unwind ]).
 
 }.
 

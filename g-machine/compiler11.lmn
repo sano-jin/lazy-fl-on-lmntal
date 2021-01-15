@@ -225,8 +225,34 @@
        | H = [ compileE(E, Env), 
 	       casejump(compileD(Alts, Env)) | T ].
     
-    
-    
+    % Compile alternatives in the case expression
+    % "D" scheme
+    compileDCons @@
+    R = compileD([Alt | Alts], Env)
+    :- ground(Env)
+       | R = [ compileA(Alt, Env) | compileD(Alts, Env) ].
+
+    compileDNil @@
+    H = compileD([], Env)
+    :- ground(Env)
+       | H = [].
+
+    % "A" scheme
+    compileACons @@
+    R = compileA(alt(Tag, Vars, Body), Env)
+    :- ground(Vars)
+       | R = asc(Tag, 
+		 [ split(length(Vars)),
+		   compileE(Body, 
+			    append(zip(Vars, 0), 
+ 				   addNtoRightElemOfAscList(Env, length(Vars)))
+
+		   ),
+		   slide(length(Vars)) ]
+    ).
+
+
+
     
     % The "compileC" compiles the expression and turns it to the code.
     % compileC(<expression to compile>, <environment>, <de bruijn index (based index)>)
@@ -345,8 +371,6 @@
 %     :- H = [ compileC(E, Env), 
 %  	     print | T ].
 %     
-
-
 
     compileCNullaryConstr @@
     R = compileC(eConstr(Tag, 0), Env)

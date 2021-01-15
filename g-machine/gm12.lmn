@@ -99,6 +99,14 @@
     :- ground(Body), int(VN)
        | H = [!Ai|S], !Ai >< !A, code = Is.
 
+
+    % Mark 6 (implementation with no confidence)
+    update0nConstr @@ 
+    H = updateStack(0, !A, [!Ai|S]), !Ai = nConstr(Tag, Args), code = [updating|Is]
+    :- int(Tag), ground(Args)
+       | H = [!Ai|S], !Ai >< !A, code = Is.
+
+
     % Update the indirection node pointing null.
     % This is for the "let rec" (Mark 3).
     update0nNull @@ 
