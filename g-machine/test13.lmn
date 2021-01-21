@@ -194,7 +194,7 @@
      ].
     */
 
-%/*
+/*
      Program = [
  	["main"] = (("getNth", 5), ("sieve", ("from", 2))),
 	["from", "n"] = ((eConstr(2, 2), "n"), ("from", "n" + 1)),
@@ -234,7 +234,29 @@
 % 				  eConstr(1, 0)
 % 	),
      ].
-%*/
+*/
+
+    /*
+     Program = [
+ 	["nfib", "n"] = if(0 < "n", 1 + ("nfib", "n" - 1) + ("nfib", "n" - 2), 1),
+ 	["main"] = ("nfib", 10)
+     ].
+    */
+
+    /*
+     Program = [
+ 	["nfib", "n"] = if(0 < "n", 1 + ("nfib", "n" - 1) + ("nfib", "n" - 2), 1),
+ 	["main"] = ("nfib", 10)
+     ].
+    */
+    
+    /*
+    Program = [
+ 	["fib", "n"] = if(2 < "n", ("fib", "n" - 1) + ("fib", "n" - 2), 1),
+ 	["main"] = ("fib", 7)
+     ].
+    */
+    
 
     compileSC(Program).
     
