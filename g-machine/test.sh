@@ -1,1 +1,1 @@
-slim --hl -t test13.lmn gm13.lmn compiler12.lmn
+slim --hl -t test15.lmn gm15.lmn compiler15.lmn
