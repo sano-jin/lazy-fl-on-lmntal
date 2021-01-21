@@ -5,6 +5,7 @@
 
 
 { module(compiler). 
+    {'$callback'(zerostep).
 
     % Compiler
 
@@ -44,7 +45,6 @@
 		       unwind
 		     ]).
 
-    {'$callback'(zerostep).
 	% Some helper functions for the compiler.
 
 	appendCons @@
@@ -111,7 +111,6 @@
 	:- R = [].
 
 
-    }.
 
     % The "compileE" compiles the expression and turns it to the code.
     % compileE(<expression to compile>, <environment>, <de bruijn index (based index)>)
@@ -535,7 +534,8 @@
     makeSpineDefaultConstr @@
     R = makeSpine(eConstr(Tag, Arity)) 
     :- R = eConstr(Tag, Arity).
-        
+
+    }.
 }.
 
 

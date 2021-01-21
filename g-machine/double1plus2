@@ -1,0 +1,58 @@
+1: {module(compiler). @19. }, {module(gm). @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }, {test. compileSC(['='(["double","x"],'+'("x","x")),'='(["main"],','("double",'+'(1,2)))]). code([pushGlobal("main"),unwind]). stack([]). dump([]). output(outputTail). }. @4. 
+---->compile
+2: {module(gm). @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }, {compiling. compileSC(['='(["double","x"],'+'("x","x")),'='(["main"],','("double",'+'(1,2)))]). code([pushGlobal("main"),unwind]). stack([]). dump([]). output(outputTail). @19. }. @4. 
+---->compileSC
+3: {module(gm). @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }, {compiling. code([pushGlobal("main"),unwind]). stack([]). dump([]). output(outputTail). m("double",!H37). m("main",!H8). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @19. }. @4. 
+---->exec
+4: {code([pushGlobal("main"),unwind]). stack([]). dump([]). output(outputTail). m("double",!H37). m("main",!H8). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->pushGlobal
+5: {code([unwind]). stack([!H8]). dump([]). output(outputTail). m("double",!H37). m("main",!H8). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->unwindGlobalWithEmptyDump
+6: {code(rearranging([pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind])). stack(rearrange(0,!H8,[])). dump([]). output(outputTail). m("double",!H37). m("main",!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->finishRearrange
+7: {code([pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind]). stack([!H8]). dump([]). output(outputTail). m("double",!H37). m("main",!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->pushInt
+8: {code([pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind]). stack([!H7c,!H8]). dump([]). output(outputTail). nNum(2,!H7c). m("double",!H37). m("main",!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->pushInt
+9: {code([add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind]). stack([!H14,!H7c,!H8]). dump([]). output(outputTail). nNum(2,!H7c). nNum(1,!H14). m("double",!H37). m("main",!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->add
+10: {code([pushGlobal("double"),mkap,eval,update(0),pop(0),unwind]). stack([!H10,!H8]). dump([]). output(outputTail). nNum(3,!H10). m("double",!H37). m("main",!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->pushGlobal
+11: {code([mkap,eval,update(0),pop(0),unwind]). stack([!H37,!H10,!H8]). dump([]). output(outputTail). nNum(3,!H10). m("main",!H8). m("double",!H37). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->mkap
+12: {code([eval,update(0),pop(0),unwind]). stack([!H59,!H8]). dump([]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->eval
+13: {code([unwind]). stack([!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->unwindApp
+14: {code([unwind]). stack([!H37,!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->unwindGlobalWithNonEmptyDump
+15: {code(rearranging([push(0),eval,push(1),eval,add,update(1),pop(1),unwind])). stack([!H10|rearrange(0,!H59,[])]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->finishRearrange
+16: {code([push(0),eval,push(1),eval,add,update(1),pop(1),unwind]). stack([!H10,!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->_code
+17: {code([eval,push(1),eval,add,update(1),pop(1),unwind]). stack([!H10,!H10,!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->eval
+18: {code([unwind]). stack([!H10]). dump([asc([push(1),eval,add,update(1),pop(1),unwind],[!H10,!H59]),asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->unwindInt
+19: {code([push(1),eval,add,update(1),pop(1),unwind]). stack([!H10,!H10,!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->_code
+20: {code([eval,add,update(1),pop(1),unwind]). stack([!H10,!H10,!H10,!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->eval
+21: {code([unwind]). stack([!H10]). dump([asc([add,update(1),pop(1),unwind],[!H10,!H10,!H59]),asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->unwindInt
+22: {code([add,update(1),pop(1),unwind]). stack([!H10,!H10,!H10,!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->addSameNode
+23: {code([update(1),pop(1),unwind]). stack([!Ha5,!H10,!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(3,!H10). nNum(6,!Ha5). nApp(!H37,!H10,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->update
+24: {code([pop(0),unwind]). stack([!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(6,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->pop0
+25: {code([unwind]). stack([!H59]). dump([asc([update(0),pop(0),unwind],[!H8])]). output(outputTail). nNum(6,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->unwindInt
+26: {code([update(0),pop(0),unwind]). stack([!H59,!H8]). dump([]). output(outputTail). nNum(6,!H59). m("main",!H8). m("double",!H37). nGlobal(0,[pushInt(2),pushInt(1),add,pushGlobal("double"),mkap,eval,update(0),pop(0),unwind],!H8). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->update
+27: {code([pop(0),unwind]). stack([!H8]). dump([]). output(outputTail). nNum(6,!H8). m("main",!H8). m("double",!H37). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->pop0
+28: {code([unwind]). stack([!H8]). dump([]). output(outputTail). nNum(6,!H8). m("main",!H8). m("double",!H37). nGlobal(1,[push(0),eval,push(1),eval,add,update(1),pop(1),unwind],!H37). @5. @7. @8. @9. @10. @11. @12. @13. @14. @15. @16. @17. }. @4. 
+---->terminateWithNum
+29: result(6). @4. 
+result(6). @4. 

@@ -1,0 +1,605 @@
+/*
+   G-Machine Compiler on LMNtal
+   Mark 6
+*/
+
+
+{ module(compiler). 
+    {'$callback'(zerostep).
+
+    % Compiler
+
+
+    %     % Main functions for the compiling starts from here.
+    %     compileSC(Program).
+
+    % Compiles the super combinators.
+    % This turns the super combinator expression to the global node
+    % with the code (the compiled body of the super combinator) embedded in it
+    % as "nGlobal(<the code>)".
+    % The embedded code will be as
+    % "[ <the codes obtained from the compileC below>
+    %  , slide(<the number of the variable plus 1>)
+    %  , unwind 
+    %  ]".
+    % Also, adds the 
+    % "<name of the super combinator> -> <the address of the global node>"
+    % binding "m(Name, Address)" to the global environment.
+    compileSC @@
+    compileSC = [ [Name|Vs] = Body | SCs ]
+    :- ground(Vs)
+       | compileSC = SCs, 
+	 m(Name, !A), 
+	 !A = compileR(Body, zip(Vs, 0), length(Vs)).
+
+    compiledSC @@ 
+    compileSC = [] :- .
+
+    compileR @@
+    R = compileR(Exp, Env, Arity)
+    :- int(Arity)
+       | R = nGlobal(Arity, 
+		     [ compileE(Exp, Env),
+		       update(Arity), 
+		       pop(Arity), 
+		       unwind
+		     ]).
+
+	% Some helper functions for the compiler.
+
+	appendCons @@
+	R = append([H|T], L)
+	:- R = [H | append(T, L)].
+
+	appendNil @@
+	R = append([], L)
+	:- R = L.
+
+	% zip with an incresing number N 
+	zipNCons @@
+	R = zip([V|Vs], N) 
+	:- Nplus1 = N + 1
+	   | R = [asc(V, N) | zip(Vs, Nplus1) ].
+
+	zipNNil @@
+	R = zip([], N) 
+	:- int(N)
+	   | R = [].
+
+	addNtoRightElemOfAscListCons @@
+	R = addNtoRightElemOfAscList([asc(V, Vi) | T], N)
+	:- ViPlusN = Vi + N
+	   | R = [asc(V, ViPlusN) | addNtoRightElemOfAscList(T, N)].
+
+	addNtoRightElemOfAscListNil @@
+	R = addNtoRightElemOfAscList([], N)
+	:- int(N)
+	   | R = [].
+
+	reverse @@ 
+	R = reverse(List) 
+	:- R = revAppend(List, []).
+
+	revAppendCons @@
+	R = revAppend([H|T], Acc)
+	:- R = revAppend(T, [H|Acc]).
+
+	revAppendNil @@
+	R = revAppend([], Acc)
+	:- R = Acc.
+
+	length_init @@
+	R = length(L) 
+	:- R = length(L, 0).
+
+	length_cons @@
+	R = length([H|L], N)
+	:- Nplus1 = N + 1, ground(H)
+	   | R = length(L, Nplus1).
+
+	length_nil @@
+	R = length([], N)
+	:- R = N.
+
+	mapDefVarCons @@
+	R = mapDefVar([Var = Def|T])
+	:- ground(Def) 
+	   | R = [Var | mapDefVar(T)].
+
+	mapDefVarNil @@
+	R = mapDefVar([])
+	:- R = [].
+
+
+
+    % The "compileE" compiles the expression and turns it to the code.
+    % compileE(<expression to compile>, <environment>, <de bruijn index (based index)>)
+    
+    % If the expression is an integer, the code should be the "pushInt"
+    compileEInt @@
+    R = compileE(Int, Env)
+    :- int(Int), ground(Env)
+       | R = pushInt(Int).
+    
+    % let
+    compileELet @@
+    H = [compileE(let(Defs, E), Env) | T ]
+    :- ground(Defs), ground(Env)
+       | H = [ compileLetDefs(Defs, Env), 
+ 	       compileE(E, 
+ 			% new environmemt
+ 			append(zip(reverse(mapDefVar(Defs)), 0), 
+ 			       addNtoRightElemOfAscList(Env, length(Defs)))
+ 	       ),
+ 	       slide(length(Defs)) | T ].
+    
+    
+    % letrec
+    compileELetRec @@
+    H = [compileE(letrec(Defs, E), Env) | T ]
+    :- ground(Defs), ground(Env)
+       | H = [ alloc(length(Defs)),
+ 	       compileLetRecDefs(Defs, 
+ 				 % new environmemt
+ 				 append(zip(reverse(mapDefVar(Defs)), 0), 
+ 					addNtoRightElemOfAscList(Env, length(Defs))),
+ 				 length(Defs)
+ 	       ), 
+ 	       compileE(E, 
+ 			% new environmemt
+ 			append(zip(reverse(mapDefVar(Defs)), 0), 
+ 			       addNtoRightElemOfAscList(Env, length(Defs)))
+ 	       ),
+ 	       slide(length(Defs)) | T ].
+    
+    
+    % Compile primitive operators
+    compileEAdd @@
+    H = [ compileE(E0 + E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+ 	       compileE(E0, addNtoRightElemOfAscList(Env, 1)),
+ 	       add | T ].
+    
+    compileEMul @@
+    H = [ compileE(E0 * E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+ 	       compileE(E0, addNtoRightElemOfAscList(Env, 1)),
+ 	       mul | T ].
+    
+    compileESub @@
+    H = [ compileE(E0 - E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+ 	       compileE(E0, addNtoRightElemOfAscList(Env, 1)),
+ 	       sub | T ].
+    
+    compileEDiv @@
+    H = [ compileE(E0 / E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+ 	       compileE(E0, addNtoRightElemOfAscList(Env, 1)),
+ 	       div | T ].
+    
+    compileELessThan @@
+    H = [ compileE(E0 < E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+ 	       compileE(E0, addNtoRightElemOfAscList(Env, 1)),
+ 	       lt | T ].
+
+    compileENeq @@
+    H = [ compileE(E0 \= E1, Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E1, Env), 
+ 	       compileE(E0, addNtoRightElemOfAscList(Env, 1)),
+ 	       neq | T ].
+    
+    compileENegate @@
+    H = [ compileE(neg(E0), Env) | T ]
+    :- H = [ compileE(E0, Env), 
+ 	     neg | T ].
+    
+    compileEIf @@
+    H = [ compileE(if(E0, E1, E2), Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E0, Env), 
+ 	       cond([ compileE(E1, Env) ], [ compileE(E2, Env) ]) | T ].
+    
+    % The default cases.
+    % (The default cases are handled with compileC).
+    
+    compileEVariable @@
+    H = [ compileE(Var, Env) | T]
+    :- string(Var)
+       | H = [ compileC(Var, Env), eval | T].
+    
+    compileEApp @@
+    H = [ compileE((E0, E1), Env) | T]
+    :- H = [ compileC((E0, E1), Env), eval | T].
+
+    compileEConstr @@
+    H = [ compileE(eConstr(Tag, Arity), Env) | T]
+    :- H = [ compileC(eConstr(Tag, Arity), Env),
+	     eval | T].
+
+%     % Print. Not working correctly
+%     compileEPrint @@
+%     H = [ compileE(print(E), Env) | T]
+%     :- H = [ compileC(print(E), Env), eval | T].
+
+
+    
+    % Mark 6
+    compileECase @@
+    H = [ compileE(case(E, Alts), Env) | T ]
+    :- ground(Env)
+       | H = [ compileE(E, Env), 
+	       casejump(compileD(Alts, Env)) | T ].
+    
+    % Compile alternatives in the case expression
+    % "D" scheme
+    compileDCons @@
+    R = compileD([Alt | Alts], Env)
+    :- ground(Env)
+       | R = [ compileA(Alt, Env) | compileD(Alts, Env) ].
+
+    compileDNil @@
+    H = compileD([], Env)
+    :- ground(Env)
+       | H = [].
+
+    % "A" scheme
+    compileACons @@
+    R = compileA(alt(Tag, Vars, Body), Env)
+    :- ground(Vars)
+       | R = asc(Tag, 
+		 [ split(length(Vars)),
+		   compileE(Body, 
+			    append(zip(Vars, 0), 
+ 				   addNtoRightElemOfAscList(Env, length(Vars)))
+
+		   ),
+		   slide(length(Vars)) ]
+    ).
+
+
+
+    
+    % The "compileC" compiles the expression and turns it to the code.
+    % compileC(<expression to compile>, <environment>, <de bruijn index (based index)>)
+    
+    % Looks up and the get the de bruijn index
+    % (... based index considering the change of the length of the stack
+    % through pushes).
+    compileLocalVar_lookup @@
+    R = compileC(Var1, [asc(Var2, Vi) | Vs])
+    :- string(Var1), Var1 \== Var2, int(Vi)
+       | R = compileC(Var1, Vs).
+    
+    % If the variable is in the environment, the variable is a local variable and
+    % it can be "pushed" with the de bruijn index (based index) from the stack.
+    compileLocalVar_resolve @@
+    R = compileC(Var1, [asc(Var2, Vi) | Vs])
+    :- string(Var1), Var1 == Var2, ground(Vs)
+       | R = push(Vi).
+    
+    % If the variable is NOT in the environment, the variable is a free variable and
+    % it should be "pushed" from the global environment through "pushGlobal".
+    compileFreeVar @@
+    R = compileC(Var, [])
+    :- string(Var)
+       | R = pushGlobal(Var).
+
+	
+	% Arithmetic operators
+% 	compileCAdd @@
+%     H = [ compileC(E0 + E1, Env) | T ]
+%     :- ground(Env)
+%        | H = [ compileC(E1, Env), 
+%  	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+%  	       add | T ].
+%     
+%     compileCSub @@
+%     H = [ compileC(E0 - E1, Env) | T ]
+%     :- ground(Env)
+%        | H = [ compileC(E1, Env), 
+%  	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+%  	       sub | T ].
+
+    compileCSub @@
+    R = compileC(E0 - E1, Env)
+    :- R = compileC((("-", E0), E1), Env).
+  
+    compileCSAdd @@
+    R = compileC(E0 + E1, Env)
+    :- R = compileC((("+", E0), E1), Env).
+  
+    compileCDiv @@
+    R = compileC(E0 / E1, Env)
+    :- R = compileC((("/", E0), E1), Env).
+  
+    compileCMul @@
+    R = compileC(E0 * E1, Env)
+    :- R = compileC((("*", E0), E1), Env).
+  
+    compileCLt @@
+    R = compileC(E0 < E1, Env)
+    :- R = compileC((("<", E0), E1), Env).
+  
+    compileCNeq @@
+    R = compileC(E0 \= E1, Env)
+    :- R = compileC((("\=", E0), E1), Env).
+  
+  
+%     compileCMul @@
+%     H = [ compileC(E0 * E1, Env) | T ]
+%     :- ground(Env)
+%        | H = [ compileC(E1, Env), 
+%  	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+%  	       mul | T ].
+%     
+%     compileCDiv @@
+%     H = [ compileC(E0 / E1, Env) | T ]
+%     :- ground(Env)
+%        | H = [ compileC(E1, Env), 
+%  	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+%  	       div | T ].
+%     
+%     compileCLessThan @@
+%     H = [ compileC(E0 < E1, Env) | T ]
+%     :- ground(Env)
+%        | H = [ compileC(E1, Env), 
+%  	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+%  	       lt | T ].
+%     
+%     compileCNeq @@
+%     H = [ compileC(E0 \= E1, Env) | T ]
+%     :- ground(Env)
+%        | H = [ compileC(E1, Env), 
+%  	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+%  	       neq | T ].
+    
+    % If the expression is an integer, the code should be the "pushInt"
+    compileCInt @@
+    R = compileC(Int, Env)
+    :- int(Int), ground(Env)
+       | R = pushInt(Int).
+    
+    
+    % let
+    compileCLet @@
+    H = [compileC(let(Defs, E), Env) | T ]
+    :- ground(Defs), ground(Env)
+       | H = [ compileLetDefs(Defs, Env), 
+ 	       compileC(E, 
+ 			% new environmemt
+ 			append(zip(reverse(mapDefVar(Defs)), 0), 
+ 			       addNtoRightElemOfAscList(Env, length(Defs)))
+ 	       ),
+ 	       slide(length(Defs)) | T ].
+    
+    
+    compileLetDefsCons @@
+    H = [compileLetDefs([Var = Def | Defs], Env) | T]
+    :- ground(Env), string(Var)
+       | H = [ compileC(Def, Env),
+ 	       compileLetDefs(Defs, addNtoRightElemOfAscList(Env, 1)) | T].
+    
+    compileLetDefsNil @@
+    H = [compileLetDefs([], Env) | T]
+    :- ground(Env)
+       | H = T.
+    
+    
+    % letrec
+    compileCLetRec @@
+    H = [compileC(letrec(Defs, E), Env) | T ]
+    :- ground(Defs), ground(Env)
+       | H = [ alloc(length(Defs)),
+ 	       compileLetRecDefs(Defs, 
+ 				 % new environmemt
+ 				 append(zip(reverse(mapDefVar(Defs)), 0), 
+ 					addNtoRightElemOfAscList(Env, length(Defs))),
+ 				 length(Defs)
+ 	       ), 
+ 	       compileC(E, 
+ 			% new environmemt
+ 			append(zip(reverse(mapDefVar(Defs)), 0), 
+ 			       addNtoRightElemOfAscList(Env, length(Defs)))
+ 	       ),
+ 	       slide(length(Defs)) | T ].
+    
+    
+    compileLetRecDefsCons @@
+    H = [compileLetRecDefs([Var = Def | Defs], Env, N) | T]
+    :- ground(Env), string(Var), N_1 = N - 1
+       | H = [ compileC(Def, Env), update(N_1),
+ 	       compileLetRecDefs(Defs, Env, N_1) | T].
+    
+    compileLetRecDefsNil @@
+    H = [compileLetRecDefs([], Env, 0) | T]
+    :- ground(Env)
+       | H = T.
+
+
+    % Mark 6
+
+%     % Print. Not working correctly
+%     compileCPrint @@
+%     H = [ compileC(print(E), Env) | T ]
+%     :- H = [ compileC(E, Env), 
+%  	     print | T ].
+%     
+
+    compileCNullaryConstr @@
+    R = compileC(eConstr(Tag, 0), Env)
+    :- ground(Env)
+       | R = pack(Tag, 0).
+
+
+    % Application is compiled into the postfix-notated code
+    % like "(E0, E1) -> [E1, E0, mkap]".
+    % However, the de bruijn index (based index) on the E0 should be increased by 1
+    % with the consideration of the increasement of the length of the stack.
+    compileCApp @@
+    H = [ compileCApp((E0, E1), Env) | T ]
+    :- ground(Env)
+       | H = [ compileC(E1, Env), 
+ 	       compileC(E0, addNtoRightElemOfAscList(Env, 1)),
+ 	       mkap | T ].
+    
+    
+
+    compileCAppCheckSaturated @@
+    R = compileC((E0, E1), Env)
+    :- ground(E0), ground(E1) 
+       | R = checkSaturated( saturatedCons([ makeSpine((E0, E1)) ]), 
+			     [ makeSpine((E0, E1)) ], 
+			     (E0, E1),
+			     Env 
+    ).
+
+    % Check checkSaturated or not
+    R = checkSaturated(X =:= Y, Spine, (E0, E1), Env)
+    :- X =:= Y, ground(E0), ground(E1)
+       | R = compileCS(reverse(Spine), Env).
+
+    R = checkSaturated(X =:= Y, Spine, (E0, E1), Env)
+    :- X =\= Y, ground(Spine)
+       | R = compileCApp((E0, E1), Env).
+    
+    R = checkSaturated(notSaturated, Spine, (E0, E1), Env)
+    :- ground(Spine)
+       | R = compileCApp((E0, E1), Env).
+
+    
+    % CompileCS
+    % Compiles the constructor followed by applications
+    compileCSConstr @@
+    R = compileCS([ eConstr(Tag, Arity) ], Env)
+    :- ground(Env)
+       | R = pack(Tag, Arity).
+
+    compileCSSpines @@
+    H = [ compileCS([E1, E2 | Es], Env) | T]
+    :- ground(Env)
+       | H = [ compileC(E1, Env), 
+	       compileCS([E2|Es], addNtoRightElemOfAscList(Env, 1)) | T].
+
+
+    % Auxiliary functions for compiling "pack" 
+
+    % Make application spines
+    isConstrSaturated @@
+    R = saturatedCons([eConstr(Tag, Arity) | T])
+    :- int(Tag) 
+       | R = (Arity =:= length(T)).
+    
+
+    % The default cases (other than constructor) for the "isConstrSaturated"
+    isConstrSaturatedDefaultNil @@
+    R = saturatedCons([])
+    :- R = notSaturated. % This may not happen and not needed.
+
+    isConstrSaturatedDefaultInt @@
+    R = saturatedCons([Int | T])
+    :- int(Int), ground(T)
+       | R = notSaturated.
+    
+    isConstrSaturatedDefaultVar @@
+    R = saturatedCons([Var | T])
+    :- string(Var), ground(T)
+       | R = notSaturated.
+    
+    isConstrSaturatedDefaultPlus @@
+    R = saturatedCons([E1 + E2 | T])
+    :- ground(E1), ground(E2), ground(T)
+       | R = notSaturated.
+    
+    isConstrSaturatedDefaultTimes @@
+    R = saturatedCons([E1 * E2 | T])
+    :- ground(E1), ground(E2), ground(T)
+       | R = notSaturated.
+    
+    isConstrSaturatedDefaultMinus @@
+    R = saturatedCons([E1 - E2 | T])
+    :- ground(E1), ground(E2), ground(T)
+       | R = notSaturated.
+    
+    isConstrSaturatedDefaultIf @@
+    R = saturatedCons([if(E1, E2, E3) | T])
+    :- ground(E1), ground(E2), ground(E3), ground(T)
+       | R = notSaturated.
+    
+    isConstrSaturatedDefaultLet @@
+    R = saturatedCons([let(Defns, E) | T])
+    :- ground(Defns), ground(E), ground(T)
+       | R = notSaturated.
+    
+    isConstrSaturatedDefaultLetRec @@
+    R = saturatedCons([letrec(Defns, E) | T])
+    :- ground(Defns), ground(E), ground(T)
+       | R = notSaturated.
+    
+    isConstrSaturatedDefaultCase @@
+    R = saturatedCons([case(E, Alts) | T])
+    :- ground(E), ground(Alts), ground(T)
+       | R = notSaturated.
+    
+    
+    
+
+    % Make application spines
+    makeSpineApp @@
+    H = [ makeSpine((E1, E2)) | T] 
+    :- H = [ makeSpine(E1), E2 | T].
+    
+    % The default cases (other than application) for the "makeSpine"
+    makeSpineDefaultInt @@
+    R = makeSpine(Int) 
+    :- int(Int) | R = Int.    
+    
+    makeSpineDefaultVar @@
+    R = makeSpine(Var) 
+    :- string(Var) | R = Var.    
+    
+    makeSpineDefaultCase @@
+    R = makeSpine(case(E, Alts)) 
+    :- R = case(E, Alts).
+
+    makeSpineDefaultIf @@
+    R = makeSpine(if(E1, E2, E3)) 
+    :- R = if(E1, E2, E3).
+    
+    makeSpineDefaultPlus @@
+    R = makeSpine(E1 + E2) 
+    :- R = E1 + E2.
+    
+    makeSpineDefaultTimes @@
+    R = makeSpine(E1 * E2) 
+    :- R = E1 * E2.
+    
+    makeSpineDefaultMinus @@
+    R = makeSpine(E1 - E2) 
+    :- R = E1 - E2.
+    
+    makeSpineDefaultLet @@
+    R = makeSpine(let(Defns, E)) 
+    :- R = let(Defns, E).
+
+    makeSpineDefaultLetRec @@
+    R = makeSpine(letrec(Defns, E)) 
+    :- R = letrec(Defns, E).
+    
+    makeSpineDefaultConstr @@
+    R = makeSpine(eConstr(Tag, Arity)) 
+    :- R = eConstr(Tag, Arity).
+
+    }.
+}.
+
+
+
+
