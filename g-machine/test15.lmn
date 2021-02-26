@@ -204,7 +204,7 @@
 
     /*
      Program = [
- 	["main"] = (("getNth", 31), ("sieve", ("from", 2))),
+ 	["main"] = (("getNth", 5), ("sieve", ("from", 2))),
 	["from", "n"] = ((eConstr(2, 2), "n"), ("from", "n" + 1)),
 	["sieve", "xs"] = case("xs", [
 		alt(1, [], eConstr(1, 0)),
@@ -234,12 +234,12 @@
      ].
    */
 
-    /*
+%    /*
      Program = [
  	["nfib", "n"] = if(0 < "n", 1 + ("nfib", "n" - 1) + ("nfib", "n" - 2), 1),
- 	["main"] = ("nfib", 10)
+ 	["main"] = ("nfib", 3)
      ].
-    */
+%    */
 
     /*
     Program = [
@@ -287,18 +287,7 @@
     !IF = nGlobal(3, 
 		  [ push(0), eval, cond([push(1)], [push(2)]), 
 		    update(3), pop(3), unwind]
-    ).
-    %  m("length", !Length), 
-    %  !Length = nGlobal(1, 
-    %	      [ push(0), eval,
-    %		casejump([ asc(1, [ pushInt(0) ]),
-    %			   asc(2, [ split(2), push(1), pushGlobal("length"),
-    %				    mkap, eval, pushInt(1), add, slide(2) ]
-    %			   ) ]),
-    %		update(1),
-    %		pop(1),
-    %		unwind ]).
-    
+    ).    
 }.
 
 

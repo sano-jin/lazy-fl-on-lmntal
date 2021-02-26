@@ -134,7 +134,7 @@
     :- code = [unwind], stack = [!A1, !A|S], !A = nApp(!A1, !A2).
 
     % Unwind the number node.
-    % This is the final operation.
+    % This is the final operation. <-- ???
     unwindInt @@
     code = [unwind], stack = [!A|S], dump = [asc(I2, S2)|D], !A = nNum(N)
     :- int(N), ground(S)
@@ -184,6 +184,7 @@
 	   | code = rearranging(Cs), 
 	     stack = rearrange(VN, !A0, S),
 	     !A0 = nGlobal(VN, Cs).
+    }.
 
 	% Unwind the constructor node
 	% Mark 6
@@ -191,7 +192,6 @@
 	code = [unwind], stack = [!A|S], dump = [asc(I2, S2)|D], !A = nConstr(Tag, Args)
 	:- ground(S)
 	   | code = I2, stack = [!A|S2], dump = D, !A = nConstr(Tag, Args).
-    }.
 
 
     % Rearrange the pointers on the stack.
