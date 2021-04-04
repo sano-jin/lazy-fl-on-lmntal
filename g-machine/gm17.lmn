@@ -1,0 +1,281 @@
+/*
+   G-Machine on LMNtal
+   Mark 6
+*/
+{ module(gm). 
+    {'$callback'(zerostep).
+	appendCons @@
+	R = append([H|T], L)
+	:- R = [H | append(T, L)].
+	appendNil @@
+	R = append([], L)
+	:- R = L.
+	revAppendCons @@
+	R = revAppend([H|T], Acc)
+	:- R = revAppend(T, [H|Acc]).
+	revAppendNil @@
+	R = revAppend([], Acc)
+	:- R = Acc.
+	reverse @@ 
+	R = reverse(List) 
+	:- R = revAppend(List, []).
+	length_init @@
+	R = length(L) 
+	:- R = length(L, 0).
+	length_cons @@
+	R = length([H|L], N)
+	:- Nplus1 = N + 1, ground(H)
+	   | R = length(L, Nplus1).
+	length_nil @@
+	R = length([], N)
+	:- R = N.
+    }.
+    pushGlobal @@
+    code = [pushGlobal(F)|Is], stack = S, m(MF, !A)
+    :- F == MF
+       | code = Is, stack = [!A|S], m(MF, !A).
+    pushInt @@
+    code = [pushInt(N)|Is], stack = S
+    :- int(N)
+       | code = Is, stack = [!A|S], !A = nNum(N).
+    mkap @@
+    code = [mkap|Is], stack = [A1, A2|S]
+    :- code = Is, stack = [!A|S], !A = nApp(A1, A2).
+    code = [push(N)|Is], stack = S
+    :- code = [pushing|Is], stack = [lookupStack(N)|S].
+    {'$callback'(zerostep).
+	pushLookup @@
+	H = [lookupStack(N), A|T]
+	:- N > 0, N_1 = N - 1
+	   | H = [A, lookupStack(N_1)|T].
+	pushResolve @@
+	code = [pushing|Is], stack = S, H = [lookupStack(0), !A|T]
+	:- code = Is, stack = [!A|S], H = [!A|T].
+    }.
+    update @@
+    code = [update(N)|Is], stack = [A|S]
+    :- code = [updating|Is], stack = updateStack(N, A, S).
+    {'$callback'(zerostep).
+	updateN @@
+	H = updateStack(N, A, [Ai|S])
+	:- N > 0, N_1 = N - 1
+	   | H = [Ai|updateStack(N_1, A, S)].
+	update0nApp @@ 
+	H = updateStack(0, !A, [!Ai|S]), !Ai = nApp(!AL, !AR), code = [updating|Is]
+	:- H = [!Ai|S], !Ai >< !A, code = Is.
+	update0nGlobal @@ 
+	H = updateStack(0, !A, [!Ai|S]), !Ai = nGlobal(VN, Body), code = [updating|Is]
+	:- ground(Body), int(VN)
+	   | H = [!Ai|S], !Ai >< !A, code = Is.
+	update0nConstr @@ 
+	H = updateStack(0, !A, [!Ai|S]), !Ai = nConstr(Tag, Args), code = [updating|Is]
+	:- int(Tag), ground(Args)
+	   | H = [!Ai|S], !Ai >< !A, code = Is.
+	update0nNull @@ 
+	H = updateStack(0, !A, [!Null|S]), !Null = null, code = [updating|Is]
+	:- H = [!A|S], !Null >< !A, code = Is. 
+    }.
+    {'$callback'(zerostep).
+	popN @@
+	code = [pop(N)|Is], stack = [!A0|S]
+	:- N > 0, N_1 = N - 1
+	   | code = [pop(N_1)|Is], stack = S.
+    }.
+    pop0 @@
+    code = [pop(0)|Is]
+    :- code = Is.
+    unwindApp @@
+    code = [unwind], stack = [!A|S], !A = nApp(!A1, A2)
+    :- code = [unwind], stack = [!A1, !A|S], !A = nApp(!A1, A2).
+    unwindInt @@
+    code = [unwind], stack = [!A|S], dump = [asc(I2, S2)|D], !A = nNum(N)
+    :- int(N), ground(S)
+       | code = I2, stack = [!A|S2], dump = D, !A = nNum(N).
+    unwindGlobalWithEmptyDump @@
+    code = [unwind], stack = [!A0|S], dump = [], !A0 = nGlobal(VN, Cs)
+    :- ground(Cs), int(VN)
+       | code  = rearranging(Cs), 
+	 stack = rearrange(VN, !A0, S),
+	 dump  = [],
+	 !A0   = nGlobal(VN, Cs).
+    unwindGlobalWithNonEmptyDump @@
+    code = [unwind], stack = [!A0|S], dump = [asc(I2, S2)|D], !A0 = nGlobal(VN, Cs)
+    :- ground(S), int(VN)
+       | code  = unwindingGlobal(length(S), VN),
+	 stack = [!A0|S],
+	 dump  = [asc(I2, S2)|D],
+	 !A0   = nGlobal(VN, Cs).
+    {'$callback'(zerostep).
+	unwindGlobalWithNonEmptyDumpKLessThanN @@
+	code = unwindingGlobal(K, N), dump = [asc(I2, S2)|D]
+	:- K < N
+	   | code = unwindingGlobalsVariables(I2, S2), 
+	     dump = D.
+	unwindingGlobalsVariabes @@
+	code = unwindingGlobalsVariables(I2, S2), stack = [!A0, A1|S]
+	:- code = unwindingGlobalsVariables(I2, S2), stack = [A1|S].
+	unwindingGlobalsVariabesFinish @@
+	code = unwindingGlobalsVariables(I2, S2), stack = [Ak]
+	:- code = I2, stack = [Ak|S2].
+	unwindGlobalWithNonEmptyDumpKGreaterThanN @@
+	code = unwindingGlobal(K, N), stack = [!A0|S], !A0 = nGlobal(VN, Cs)
+	:- K >= N, ground(Cs), int(VN)
+	   | code = rearranging(Cs), 
+	     stack = rearrange(VN, !A0, S),
+	     !A0 = nGlobal(VN, Cs).
+    }.
+    unwindNConstrWithNonEmptyDump @@
+    code = [unwind], stack = [!A|S], dump = [asc(I2, S2)|D], !A = nConstr(Tag, Args)
+    :- ground(S)
+       | code = I2, stack = [!A|S2], dump = D, !A = nConstr(Tag, Args).
+    {'$callback'(zerostep).
+	rearrange @@
+	H = rearrange(VN, !Ai_1, [!A|T]), !A = nApp(AL, !AR) 
+	:- VN > 0, VN_1 = VN - 1 
+	   | H = [!AR|rearrange(VN_1, !A, T)], !A = nApp(AL, !AR) .
+    }.
+    finishRearrange @@
+    code = rearranging(CS), H = rearrange(0, An, T), 
+    :- code = CS, H = [An|T].
+    eval @@
+    code = [eval|Is], stack = [A|S], dump = D
+    :- code = [unwind], stack = [A], dump = [asc(Is, S)|D].
+    add @@
+    code = [add|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N = N0 + N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
+    
+    addSameNode @@
+    code = [add|Is], stack = [!A0, !A0|S], !A0= nNum(N0)
+    :- N = N0 + N0
+       | code = Is, stack = [!A|S], !A0 = nNum(N0), !A = nNum(N).
+    sub @@
+    code = [sub|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N = N0 - N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
+    subSameNode @@
+    code = [sub|Is], stack = [!A0, !A0|S], !A0= nNum(N0)
+    :- N = N0 - N0
+       | code = Is, stack = [!A|S], !A0 = nNum(N0), !A = nNum(N).
+    mul @@
+    code = [mul|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N = N0 * N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
+    mulSameNode @@
+    code = [mul|Is], stack = [!A0, !A0|S], !A0= nNum(N0)
+    :- N = N0 * N0
+       | code = Is, stack = [!A|S], !A0 = nNum(N0), !A = nNum(N).
+    div @@
+    code = [div|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N1 =\= 0,  N = N0 / N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(N).
+    divSameNode @@
+    code = [div|Is], stack = [!A0, !A0|S], !A0= nNum(N0)
+    :- N0 =\= 0, N = N0 / N0
+       | code = Is, stack = [!A|S], !A0 = nNum(N0), !A = nNum(N).
+    neg @@
+    code = [neg|Is], stack = [!A0|S], !A0 = nNum(N0)
+    :- N = - N0
+       | code = Is, stack = [!A|S], !A= nNum(N), !A0 = nNum(N0).
+    lessThanTrue @@
+    code = [lt|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N0 < N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(1).
+    lessThanFalse @@
+    code = [lt|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N0 >= N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(0).
+    lessThanFalseSameNode @@
+    code = [lt|Is], stack = [!A0, !A0|S], !A0= nNum(N0)
+    :- code = Is, stack = [!A|S], !A0= nNum(N0), !A = nNum(0).
+    neqTrue @@
+    code = [neq|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N0 =\= N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(1).
+    neqFalse @@
+    code = [neq|Is], stack = [!A0, !A1|S], !A0= nNum(N0), !A1 = nNum(N1)
+    :- N0 =:= N1
+       | code = Is, stack = [!A|S], !A0= nNum(N0), !A1 = nNum(N1), !A = nNum(0).
+    neqFalseSameNode @@
+    code = [neq|Is], stack = [!A0, !A0|S], !A0= nNum(N0)
+    :- code = Is, stack = [!A|S], !A0= nNum(N0), !A = nNum(0).
+    condTrue @@
+    code = [cond(I1, I2)|Is], stack = [!A|S], !A= nNum(1)
+    :- ground(I2)
+       | code = append(I1, Is), stack = S, !A = nNum(1).
+    condFalse @@
+    code = [cond(I1, I2)|Is], stack = [!A|S], !A= nNum(0)
+    :- ground(I1)
+       | code = append(I2, Is), stack = S, !A = nNum(0).
+    slide @@
+    code = [slide(N)|Is]
+    :- int(N)
+       | code = [sliding(N)|Is].
+    {'$callback'(zerostep).
+	slideN @@
+	code = [sliding(N)|Is], stack = [!A0, !A1|S]
+	:- N > 0, N_1 = N - 1
+	   | code = [sliding(N_1)|Is], stack = [!A0|S].
+	slide0 @@
+	code = [sliding(0)|Is]
+	:- code = Is.
+    }.
+    {'$callback'(zerostep).
+	allocN @@
+	code = [alloc(N)|Is], stack = S
+	:- N > 0, N_1 = N - 1
+	   | code = [alloc(N_1)|Is], stack = [!Null|S], !Null = null.
+    }.
+    alloc0 @@
+    code = [alloc(0)|Is], stack = S
+    :- code = Is, stack = S.
+    pack @@
+    code = [pack(Tag, Arity) | Is]
+    :- code = [packing(Tag, Arity, []) | Is].
+    {'$callback'(zerostep).
+	packN @@
+	R = packing(Tag, Arity, Args), stack = [A|S]
+	:- Arity > 0, Arity_1 = Arity - 1
+	   | R = packing(Tag, Arity_1, [A|Args]), stack = S.
+	pack0 @@
+	code = [packing(Tag, 0, Args) | Is], stack = S
+	:- code = Is, stack = [!A|S], !A = nConstr(Tag, reverse(Args)).
+    }.
+    {'$callback'(zerostep).
+	casejumpLookup @@
+	code = [casejump([asc(Tag1, I2) | Cases]) | Is], 
+	stack = [!A|S], 
+	!A = nConstr(Tag2, SS)
+	:- Tag1 =\= Tag2, ground(I2)
+	   | code  = [casejump(Cases) | Is], 
+	     stack = [!A|S], 
+	     !A    = nConstr(Tag2, SS).
+    }.
+    casejumpResolve @@
+    code = [casejump([asc(Tag1, I2) | Cases]) | Is], 
+    stack = [!A|S], 
+    !A = nConstr(Tag2, SS)
+    :- Tag1 =:= Tag2, ground(Cases)
+       | code  = append(I2, Is), 
+	 stack = [!A|S], 
+	 !A    = nConstr(Tag2, SS).
+    code = [split(N) | Is], stack = [!A|S], !A = nConstr(Tag, Args)
+    :- ground(Args), int(N) % There may be no need for the N
+       | code  = Is,
+	 stack = append(Args, S), 
+	 !A    = nConstr(Tag, Args).
+    {'$callback'(zerostep).
+	gcNApp @@
+	!A = nApp(!E1, !E2) 
+	:- num(!A) =:= 1
+	   | .
+	gcNNum @@
+	!A = nNum(N) 
+	:- num(!A) =:= 1, int(N)
+	   | .
+	gcNConstr @@
+	!A = nConstr(Tag, Args) 
+	:- num(!A) =:= 1, int(Tag), ground(Args)
+	   | .
+    }.
+}.

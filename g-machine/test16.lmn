@@ -1,0 +1,317 @@
+% Testing module
+
+
+
+{ test.
+    
+    % Some tests
+    
+    /*
+     Program = [
+ 	["id", "x"] = "x",
+ 	["main"   ] = ("id", 3)
+     ].
+    */
+    
+    /*
+     Program = [
+ 	["k", "x", "y"     ] = "x",
+ 	["s", "x", "y", "z"] = (("x", "z"), ("y", "z")),
+ 	["main"            ] = ((("s", "k"), "k"), 3)
+     ].
+    */
+
+    /*
+    Program = [
+ 	["k", "x", "y"     ] = "x",
+ 	["s", "x", "y", "z"] = (("x", "z"), ("y", "z")),
+ 	["id"              ] = (("s", "k"), "k"),
+ 	["main"            ] = ("id", 3)
+    ].
+    */
+    
+    /*
+     Program = [
+ 	["twice", "f", "x"] = ("f", ("f", "x")),
+ 	["id", "x"        ] = "x",
+ 	["main"           ] = ((("twice", "twice"), "id"), 3)
+     ].
+    */
+    
+    /*
+     pair x y f = f x y
+     fst x y = x
+     snd x y = y
+     list = pair 1 list
+     main = list snd fst
+    */
+    
+    /*
+     Program = [
+ 	["list"               ] = (("pair", 1), "list"),
+ 	["pair", "x", "y", "f"] = (("f", "x"), "y"),
+ 	["fst", "x", "y"      ] = "x",
+ 	["snd", "x", "y"      ] = "y",
+ 	["main"               ] = (("list", "snd"), "fst")
+     ].
+    */
+    
+    /*
+     Program = [
+ 	["main"] = let(["x" = 1], "x")
+     ].
+    */
+    
+    /*
+     Program = [
+ 	["main"] = letrec(["x" = 1, "y" = "x"], "y")
+     ].
+    */
+    
+    /*
+     Program = [
+ 	["pair", "x", "y", "f"] = (("f", "x"), "y"),
+ 	["fst", "x", "y"      ] = "x",
+ 	["snd", "x", "y"      ] = "y",
+ 	["main"] = letrec(["list" = (("pair", 1), "list")], 
+ 			  ("list", "fst")
+ 	)
+     ].
+    */
+    
+    
+    /*
+     Program = [
+ 	["pair", "x", "y", "f"] = (("f", "x"), "y"),
+ 	["fst", "x", "y"      ] = "x",
+ 	["snd", "x", "y"      ] = "y",
+ 	["main"] = letrec(["list" = (("pair", 1), "list")], 
+ 			  (("list", "snd"), "fst")
+ 	)
+     ].
+    */
+    
+    /*
+     Program = [
+ 	["main"] = (("+", (("+", 1), 2)), 3)
+     ].
+    */
+    
+    /*
+     Program = [
+ 	["main"] = ((("if", (("<", 1), 2)), (("+", 3), 4)), (("+", 5), 6))
+     ].
+    */
+    
+    /*
+     Program = [
+ 	["main"] = if(1 < 2, 3 + neg(4), 5 + 6)
+     ].
+    */
+    
+    /*
+     Program = [
+ 	["fac", "n"] = if(1 < "n", ("n" * ("fac", "n" - 1)), 1),
+ 	["main"] = ("fac", 5)
+     ].
+   */
+    
+    /*
+     Program = [
+ 	["downfrom", "n"] = if( 0 < "n", 
+ 				((eConstr(2, 2), "n"), ("downfrom", "n" - 1)), 
+ 				eConstr(1, 0)
+ 	),
+ 	["main"] = ("downfrom", 4)
+     ].
+    */
+    
+    /*    
+    Program = [
+ 	["downfrom", "n"] = if( 0 < "n", 
+ 				((eConstr(2, 2), "n"), ("downfrom", "n" - 1)), 
+ 				eConstr(1, 0)
+ 	),
+ 	["length", "list"] = case( "list", 
+ 				   [ alt(1, [], 0), % nil
+ 				     alt(2, ["h", "t"], 1 + ("length", "t")) ] % cons
+ 	),
+ 	["main"] = ("length", ("downfrom", 5))
+    ].
+   */
+    
+    /*
+    Program = [
+ 	["downfrom", "n"] = if( 0 < "n", 
+ 				((eConstr(2, 2), "n"), ("downfrom", "n" - 1)), 
+ 				eConstr(1, 0)
+ 	),
+ 	["foldMul", "list"] = case( "list", 
+ 				    [ alt(1, [], 1), % nil
+ 				      alt(2, ["h", "t"], % cons
+					  "h" * ("foldMul", "t")
+				      ) ] 
+ 	),
+ 	["main"] = ("foldMul", ("downfrom", 5))
+    ].
+    */
+
+    /*
+    Program = [
+ 	["list", "n"] = ((eConstr(2, 2), "n"), ("list", "n" + 1)), 
+ 	["timesN", "list", "n"] = if( 0 < "n",
+				       case( "list", 
+ 					     [ alt(1, [], 1), % nil
+ 					       alt(2, ["h", "t"], % cons
+						   "h" * (("timesN", "t"), "n" - 1)
+					       ) ]
+ 				       ),
+				       1
+	),
+ 	["main"] = (("timesN", ("list", 1)), 5)
+    ].
+    */
+
+    /*
+    Program = [
+ 	["list", "n"] = ((eConstr(2, 2), "n"), ("list", "n" + 1)), 
+ 	["take", "list", "n"] = if( 0 < "n",
+				    case( "list", 
+ 					  [ alt(1, [], eConstr(1, 0)), % nil
+ 					    alt(2, ["h", "t"], % cons
+						((eConstr(2, 2), "h"), 
+						 (("take", "t"), "n" - 1)) 
+					       ) ]
+ 				       ),
+				       eConstr(1, 0)
+	),
+ 	["times", "list"] = case( "list", 
+ 				  [ alt(1, [], 1), % nil
+ 				    alt(2, ["h", "t"], % cons
+					"h" * ("times", "t")
+				    ) ]
+ 	),
+ 	["main"] = ("times", (("take", ("list", 1)), 5))
+    ].
+    */
+
+    /*
+     Program = [
+	["double", "x"] = "x" + "x",
+ 	["main"] = ("double", 1 + 2)
+     ].
+    */
+
+%    /*
+     Program = [
+ 	["main"] = (("getNth", 5), ("sieve", ("from", 2))),
+	["from", "n"] = ((eConstr(2, 2), "n"), ("from", "n" + 1)),
+	["sieve", "xs"] = case("xs", [
+		alt(1, [], eConstr(1, 0)),
+		alt(2, ["p", "ps"], 
+		    ((eConstr(2, 2), 
+		      "p"), 
+		     ("sieve", (("filter", ("nonMultiple", "p")), "ps")))
+		     )]),
+	["filter", "predicate", "xs"] = case("xs", [
+		alt(1, [], eConstr(1, 0)),
+		alt(2, ["p", "ps"], 
+		    let(["rest" = (("filter", "predicate"), "ps")],
+			 if(("predicate", "p"), 
+			    ((eConstr(2, 2), "p"), "rest"),
+			    "rest"
+			))
+		)]),
+	["nonMultiple", "p", "n"] = (("n" / "p") * "p" \= "n"),
+ 	["getNth", "n", "xs"] = case("xs", [ 
+		alt(1, [], -1), % nil
+ 		alt(2, ["p", "ps"], % cons
+		    if(0 < "n",
+		       (("getNth", "n" - 1), "ps"),
+		       "p"
+		    )
+		)])
+     ].
+%   */
+
+    /*
+     Program = [
+ 	["nfib", "n"] = if(0 < "n", 1 + ("nfib", "n" - 1) + ("nfib", "n" - 2), 1),
+ 	["main"] = ("nfib", 3)
+     ].
+    */
+
+    /*
+    Program = [
+ 	["fib", "n"] = if(2 < "n", ("fib", "n" - 1) + ("fib", "n" - 2), 1),
+ 	["main"] = ("fib", 7)
+     ].
+    */
+    
+
+    compileSC(Program).
+    
+    % The initial code and the stack.
+    % (The initial heap (global nodes) and global environment 
+    % will be produced by compiling the expression (super combinators))
+    code = [pushGlobal("main"), unwind].
+    stack = [].
+    dump = [].
+
+    % Predifined primitives
+    primitives @@
+    :- uniq |
+	m("+", !Add), 
+    !Add = nGlobal(2,
+		   [push(1), eval, push(1), eval, add, update(2), pop(2), unwind]
+    ),
+    m("-", !Sub), 
+    !Sub = nGlobal(2,
+		   [push(1), eval, push(1), eval, sub, update(2), pop(2), unwind]
+    ),
+    m("*", !Mul), 
+    !Mul = nGlobal(2,
+		   [push(1), eval, push(1), eval, mul, update(2), pop(2), unwind]
+    ),
+    m("/", !Div), 
+    !Div = nGlobal(2,
+		   [push(1), eval, push(1), eval, div, update(2), pop(2), unwind]
+    ),
+    m("negate", !Neg), 
+    !Neg = nGlobal(1, [push(0), eval, neg, update(1), pop(1), unwind]),
+    m("<", !LT), 
+    !LT = nGlobal(2, [push(1), eval, push(1), eval, lt, update(2), pop(2), unwind]),
+    m("\=", !Neq), 
+    !Neq = nGlobal(2, [push(1), eval, push(1), eval, neq, update(2), pop(2), unwind]),
+    m("if", !IF), 
+    !IF = nGlobal(3, 
+		  [ push(0), eval, cond([push(1)], [push(2)]), 
+		    update(3), pop(3), unwind]
+    ).    
+}.
+
+compile @@
+{module(compiler). @rCompiler}, {test. $p. @rTest}
+  :- {compiling. @rCompiler. $p. @rTest}.
+
+
+exec @@
+{module(gm). @rGM}, {compiling. @rCompiler. $p}/
+  :- {@rGM. $p}.
+
+
+% Terminates if the dump is empty.
+terminateWithNum @@
+{code = [unwind], stack = [!A], !A = nNum(N), dump = [], $p[], @r}
+  :- int(N)
+     | result = N.
+
+% Terminates if the dump is empty.
+terminateWithConstr @@
+{code = [unwind], stack = [!A], !A = nConstr(Tag, Args), dump = [], $p[], @r}
+  :- ground(Args), int(Tag)
+     | result = nConstr(Tag, Args).
+
+
+
+
